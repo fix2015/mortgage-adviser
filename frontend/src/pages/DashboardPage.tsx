@@ -27,8 +27,9 @@ const EMPLOYMENT_TABS = [
 
 const COMMON_CATEGORIES = new Set(["id", "address", "credit_report", "deposit", "immigration"]);
 
-// Mark which docs are required vs good-to-have
-const REQUIRED_CATEGORIES = new Set(["id", "address", "income", "bank_statements", "payslips", "tax_returns", "employment"]);
+// Critical = must get before applying. Important = strongly recommended.
+const CRITICAL_CATEGORIES = new Set(["id", "address", "bank_statements", "tax_returns", "employment", "deposit", "company_accounts"]);
+const IMPORTANT_CATEGORIES = new Set(["payslips", "credit_report", "immigration", "income"]);
 
 const WHY_NEEDED: Record<string, Record<string, string>> = {
   common: {
@@ -245,44 +246,54 @@ function NoDocumentsView({ user, consultation, questionsLimit }: { user: ReturnT
                       </div>
                     )}
 
-                    {/* Documents Still Needed */}
-                    {appMissing.length > 0 && (
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: "#dc2626" }} />
-                          <h4 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#dc2626" }}>Documents Still Needed</h4>
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>{appMissing.length} missing</span>
-                        </div>
-                        <div className="rounded-lg border border-ds-border-default overflow-hidden">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr style={{ backgroundColor: "#fef2f2" }}>
-                                <th className="text-left text-xs font-semibold text-ds-text-secondary px-4 py-2.5 border-b border-ds-border-default">Document</th>
-                                <th className="text-center text-xs font-semibold text-ds-text-secondary px-4 py-2.5 border-b border-ds-border-default w-28">Status</th>
-                                <th className="text-left text-xs font-semibold text-ds-text-secondary px-4 py-2.5 border-b border-ds-border-default">Why It's Needed</th>
-                                <th className="text-center text-xs font-semibold text-ds-text-secondary px-4 py-2.5 border-b border-ds-border-default w-24">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {appMissing.map((item, idx) => (
-                                <tr key={applicant.prefix + item.category} className={idx % 2 === 0 ? "bg-white" : "bg-ds-bg-tertiary"}>
-                                  <td className="px-4 py-3 font-medium text-ds-text-primary border-b border-ds-border-default">{item.label}</td>
-                                  <td className="px-4 py-3 text-center border-b border-ds-border-default"><StatusBadge status="missing" /></td>
-                                  <td className="px-4 py-3 text-ds-text-secondary text-xs border-b border-ds-border-default">{getWhyNeeded(item.category, readiness.employment_type)}</td>
-                                  <td className="px-4 py-3 text-center border-b border-ds-border-default">
-                                    <Link to="/dashboard/documents">
-                                      <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
-                                        <Upload className="h-3 w-3" />Upload
-                                      </Button>
-                                    </Link>
-                                  </td>
+                    {/* Documents Still Needed — split Critical vs Important */}
+                    {appMissing.length > 0 && (() => {
+                      const criticalMissing = appMissing.filter(i => CRITICAL_CATEGORIES.has(i.category));
+                      const importantMissing = appMissing.filter(i => !CRITICAL_CATEGORIES.has(i.category));
+
+                      const renderMissingTable = (items: typeof appMissing, title: string, color: string, bgColor: string, headerBg: string, badgeStyle: { bg: string; text: string }) => items.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+                            <h4 className="text-xs font-semibold uppercase tracking-wider" style={{ color }}>{title}</h4>
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: badgeStyle.bg, color: badgeStyle.text }}>{items.length} missing</span>
+                          </div>
+                          <div className="rounded-lg border border-ds-border-default overflow-hidden">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr style={{ backgroundColor: headerBg }}>
+                                  <th className="text-left text-xs font-semibold text-ds-text-secondary px-4 py-2.5 border-b border-ds-border-default">Document</th>
+                                  <th className="text-center text-xs font-semibold text-ds-text-secondary px-4 py-2.5 border-b border-ds-border-default w-28">Status</th>
+                                  <th className="text-left text-xs font-semibold text-ds-text-secondary px-4 py-2.5 border-b border-ds-border-default">Why It's Needed</th>
+                                  <th className="text-center text-xs font-semibold text-ds-text-secondary px-4 py-2.5 border-b border-ds-border-default w-24">Action</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {items.map((item, idx) => (
+                                  <tr key={applicant.prefix + item.category} className={idx % 2 === 0 ? "bg-white" : "bg-ds-bg-tertiary"}>
+                                    <td className="px-4 py-3 font-medium text-ds-text-primary border-b border-ds-border-default">{item.label}</td>
+                                    <td className="px-4 py-3 text-center border-b border-ds-border-default"><StatusBadge status="missing" /></td>
+                                    <td className="px-4 py-3 text-ds-text-secondary text-xs border-b border-ds-border-default">{getWhyNeeded(item.category, readiness.employment_type)}</td>
+                                    <td className="px-4 py-3 text-center border-b border-ds-border-default">
+                                      <Link to="/dashboard/documents">
+                                        <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2"><Upload className="h-3 w-3" />Upload</Button>
+                                      </Link>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+
+                      return (
+                        <div className="space-y-5">
+                          {renderMissingTable(criticalMissing, "Critical — Must Get Before Applying", "#dc2626", "#fee2e2", "#fef2f2", { bg: "#fee2e2", text: "#991b1b" })}
+                          {renderMissingTable(importantMissing, "Important — Strongly Recommended", "#d97706", "#fef3c7", "#fffbeb", { bg: "#fef3c7", text: "#92400e" })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}
