@@ -792,10 +792,157 @@ def _build_table(rows: list[list[str]], styles: dict) -> list:
     return [Spacer(1, 3 * mm), table, Spacer(1, 3 * mm)]
 
 
+def _section_heading(elements: list, text: str, s: dict, accent):
+    """Append a styled section heading with accent underline."""
+    elements.append(Paragraph(text, s["h1"]))
+    elements.append(
+        HRFlowable(
+            width="100%",
+            thickness=1,
+            color=accent,
+            spaceBefore=0,
+            spaceAfter=4 * mm,
+        )
+    )
+
+
+def _styled_table(rows: list[list[str]], col_widths: list, navy, light_bg):
+    """Build a consistently styled table from raw string rows (first row = header)."""
+    border_color = HexColor("#c8d4e3")
+    white = HexColor("#ffffff")
+
+    table = Table(rows, colWidths=col_widths)
+    cmds = [
+        ("BACKGROUND", (0, 0), (-1, 0), navy),
+        ("TEXTCOLOR", (0, 0), (-1, 0), white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("GRID", (0, 0), (-1, -1), 0.5, border_color),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, light_bg]),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+    ]
+    table.setStyle(TableStyle(cmds))
+    return table
+
+
+def _ai_generate_report_analysis(
+    knowledge_text: str, conversation_summary: str, user_profile: dict
+) -> dict:
+    """Call OpenAI once to generate the executive summary, challenges, and recommendations.
+
+    Returns a dict with keys: executive_summary, overall_position, challenges, recommendations,
+    property_details, income_data, credit_summary, savings_data.
+    """
+    import json as _json
+
+    prompt = f"""You are a senior UK mortgage adviser writing a professional Mortgage Readiness Assessment report.
+
+Based on the knowledge base and conversation below, produce a structured JSON analysis.
+
+KNOWLEDGE BASE (from uploaded documents):
+{knowledge_text[:6000]}
+
+CONVERSATION SUMMARY:
+{conversation_summary[:3000]}
+
+USER PROFILE:
+- Name: {user_profile.get("full_name", "Not provided")}
+- Employment type: {user_profile.get("employment_type", "Not provided")}
+- Stated annual income: {user_profile.get("annual_income", "Not provided")}
+- Property value: {user_profile.get("property_value", "Not provided")}
+- Deposit amount: {user_profile.get("deposit_amount", "Not provided")}
+- First-time buyer: {user_profile.get("first_time_buyer", "Not provided")}
+
+Return ONLY valid JSON (no markdown fences) with this exact structure:
+{{
+  "executive_summary": "4-6 sentence professional summary of mortgage readiness. Include specific numbers. End with overall position.",
+  "overall_position": "STRONG|MODERATE|NEEDS WORK",
+  "property_details": {{
+    "address": "address if mentioned or null",
+    "type": "property type if mentioned or null",
+    "offer_price": "price if mentioned or null",
+    "stamp_duty": "estimated stamp duty or null"
+  }},
+  "income_data": [
+    {{
+      "applicant": "Name or Applicant 1",
+      "employment_type": "employed/self_employed/company_director/cis_contractor",
+      "role": "job title if known or null",
+      "company": "company name if known or null",
+      "tax_years": [
+        {{"year": "2023/24", "salary": "amount or null", "dividends": "amount or null", "total_income": "amount or null", "tax_due": "amount or null"}}
+      ]
+    }}
+  ],
+  "credit_summary": {{
+    "score": "credit score if mentioned or null",
+    "key_points": ["point 1", "point 2"]
+  }},
+  "savings_data": [
+    {{"account": "account name", "balance": "amount", "date": "date if known or null"}}
+  ],
+  "challenges": ["challenge 1 - be specific to their situation", "challenge 2", "challenge 3"],
+  "recommendations": {{
+    "immediate": ["numbered action 1", "numbered action 2", "numbered action 3"],
+    "strengthen": ["action to strengthen position 1", "action 2"],
+    "lender_suggestions": ["Lender 1 - reason", "Lender 2 - reason"]
+  }}
+}}
+
+Be specific to this applicant's situation. Extract real numbers from the knowledge base where available.
+If data is not available, use null rather than making up numbers.
+"""
+
+    try:
+        client = get_openai_client()
+        resp = client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=2000,
+            temperature=0.3,
+        )
+        raw = resp.choices[0].message.content.strip()
+        if raw.startswith("```"):
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw)
+        return _json.loads(raw)
+    except Exception:
+        return {}
+
+
 def generate_strategy_report_pdf(
     db: Session, consultation_id: int, title: str
 ) -> bytes:
-    """Generate a professional PDF mortgage strategy report from the consultation."""
+    """Generate a professional Mortgage Readiness Assessment PDF report."""
+    from app.modules.users.models import User
+    from app.modules.payments.models import Consultation
+
+    # ---- Gather data ----
+    consultation = (
+        db.query(Consultation).filter(Consultation.id == consultation_id).first()
+    )
+    user_id = consultation.user_id if consultation else None
+    user = db.query(User).filter(User.id == user_id).first() if user_id else None
+
+    user_profile = {
+        "full_name": user.full_name if user else "Applicant",
+        "employment_type": user.employment_type if user else "employed",
+        "annual_income": f"\u00a3{user.annual_income:,}"
+        if user and user.annual_income
+        else None,
+        "property_value": f"\u00a3{user.property_value:,}"
+        if user and user.property_value
+        else None,
+        "deposit_amount": f"\u00a3{user.deposit_amount:,}"
+        if user and user.deposit_amount
+        else None,
+        "first_time_buyer": user.first_time_buyer if user else True,
+    }
+
     messages = (
         db.query(Message)
         .filter(
@@ -805,18 +952,25 @@ def generate_strategy_report_pdf(
         .order_by(Message.created_at.asc())
         .all()
     )
-    user_messages = (
-        db.query(Message)
-        .filter(
-            Message.consultation_id == consultation_id,
-            Message.role == MessageRole.USER,
-        )
-        .order_by(Message.created_at.asc())
-        .all()
-    )
-
     knowledge_text = get_knowledge_base_text(db, consultation_id)
 
+    # Readiness checklist
+    readiness = calculate_readiness(db, user_id, consultation_id) if user_id else None
+
+    # Build conversation summary for AI
+    conversation_summary = ""
+    for msg in messages[:5]:
+        conversation_summary += msg.content[:1500] + "\n---\n"
+
+    # AI analysis (single call for summary, challenges, recommendations)
+    analysis = _ai_generate_report_analysis(
+        knowledge_text, conversation_summary, user_profile
+    )
+
+    # Borrowing capacity from profile
+    annual_income_raw = user.annual_income if user and user.annual_income else None
+
+    # ---- PDF Setup ----
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -971,9 +1125,24 @@ def generate_strategy_report_pdf(
         ),
     }
 
+    summary_box_style = ParagraphStyle(
+        "SummaryBox",
+        parent=s["body"],
+        fontSize=10,
+        leading=16,
+        textColor=navy,
+        backColor=HexColor("#eef2f8"),
+        borderColor=accent,
+        borderWidth=1,
+        borderPadding=12,
+        spaceAfter=6 * mm,
+    )
+
     elements = []
 
-    # Cover / Header
+    # ================================================================
+    # SECTION 1: Cover / Header
+    # ================================================================
     elements.append(Spacer(1, 15 * mm))
     elements.append(Paragraph("AI Mortgage Adviser", s["brand"]))
     elements.append(Paragraph("Powered by Advanced AI Technology", s["brand_sub"]))
@@ -983,14 +1152,28 @@ def generate_strategy_report_pdf(
             width="100%", thickness=2, color=accent, spaceBefore=0, spaceAfter=5 * mm
         )
     )
-    elements.append(Paragraph(title, s["title"]))
+    elements.append(Paragraph("Mortgage Readiness Assessment", s["title"]))
+
+    applicant_name = user_profile["full_name"] or "Applicant"
+    elements.append(
+        Paragraph(
+            f"Prepared for: <b>{_escape(applicant_name)}</b>",
+            s["body"],
+        )
+    )
     elements.append(
         Paragraph(
             f"Generated on {datetime.utcnow().strftime('%d %B %Y')}  \u2022  "
-            f"Consultation #{consultation_id}  \u2022  "
-            f"{len(messages)} AI responses  \u2022  "
-            f"{len(user_messages)} questions asked",
+            f"Consultation #{consultation_id}",
             s["subtitle"],
+        )
+    )
+    elements.append(
+        Paragraph(
+            "IMPORTANT: This document is for informational purposes only and does not "
+            "constitute regulated mortgage advice. Always consult an FCA-regulated mortgage "
+            "adviser before making financial decisions.",
+            s["disclaimer"],
         )
     )
     elements.append(
@@ -1003,260 +1186,448 @@ def generate_strategy_report_pdf(
         )
     )
 
-    # Table of Contents
-    toc_data = [
-        ["Section", "Page"],
-        ["1. Executive Summary", "2"],
-        ["2. Financial Overview", "2"],
-        ["3. Mortgage Strategies", "3"],
-        ["4. Recommended Actions", "-"],
-        ["5. Disclaimer", "-"],
-    ]
-    toc_table = Table(toc_data, colWidths=[130 * mm, 25 * mm])
-    toc_table.setStyle(
-        TableStyle(
-            [
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("TEXTCOLOR", (0, 0), (-1, 0), navy),
-                ("TEXTCOLOR", (0, 1), (-1, -1), dark_text),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("LINEBELOW", (0, 0), (-1, 0), 1, navy),
-                ("LINEBELOW", (0, -1), (-1, -1), 0.5, HexColor("#e5e7eb")),
-                ("ALIGN", (1, 0), (1, -1), "CENTER"),
-            ]
-        )
-    )
-    elements.append(toc_table)
-
-    # 1. Executive Summary
-    elements.append(Paragraph("1. Executive Summary", s["h1"]))
-    elements.append(
-        HRFlowable(
-            width="100%",
-            thickness=1,
-            color=accent,
-            spaceBefore=0,
-            spaceAfter=4 * mm,
-        )
+    # ================================================================
+    # SECTION 2: Property Details
+    # ================================================================
+    prop = analysis.get("property_details", {})
+    has_property = any(
+        v and v != "null"
+        for v in [
+            prop.get("address"),
+            prop.get("type"),
+            prop.get("offer_price"),
+            user_profile.get("property_value"),
+        ]
     )
 
-    ai_summary = ""
-    if messages:
-        try:
-            all_advice = "\n".join(m.content[:1500] for m in messages[:5])
-            client = get_openai_client()
-            summary_resp = client.chat.completions.create(
-                model=settings.OPENAI_MODEL,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are writing the executive summary for a professional mortgage strategy report. "
-                            "Write a clear, concise 4-6 sentence summary of the key findings and recommendations. "
-                            "Include specific amounts, rates, and lender names where possible. "
-                            "Write in third person professional tone. No markdown, just plain text."
-                        ),
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Summarise these mortgage consultation findings:\n\n{all_advice}",
-                    },
-                ],
-                max_tokens=400,
-                temperature=0.3,
+    if has_property:
+        _section_heading(elements, "1. Property Details", s, accent)
+        prop_rows = [["Detail", "Value"]]
+        if prop.get("address") and prop["address"] != "null":
+            prop_rows.append(["Property Address", str(prop["address"])])
+        if prop.get("type") and prop["type"] != "null":
+            prop_rows.append(["Property Type", str(prop["type"])])
+        offer_price = (
+            prop.get("offer_price")
+            if prop.get("offer_price") and prop["offer_price"] != "null"
+            else user_profile.get("property_value")
+        )
+        if offer_price:
+            prop_rows.append(["Offer Price", str(offer_price)])
+        if prop.get("stamp_duty") and prop["stamp_duty"] != "null":
+            prop_rows.append(["Estimated Stamp Duty", str(prop["stamp_duty"])])
+        elif user and user.property_value:
+            sd = calculate_stamp_duty(
+                user.property_value,
+                user.first_time_buyer if user else True,
             )
-            ai_summary = summary_resp.choices[0].message.content.strip()
-        except Exception:
-            ai_summary = ""
+            prop_rows.append(["Estimated Stamp Duty", f"\u00a3{sd // 100:,}"])
+        if user_profile.get("deposit_amount"):
+            prop_rows.append(["Deposit", str(user_profile["deposit_amount"])])
+        if len(prop_rows) > 1:
+            elements.append(
+                _styled_table(prop_rows, [55 * mm, 100 * mm], navy, light_bg)
+            )
+        section_counter = 2
+    else:
+        section_counter = 1
 
-    if ai_summary:
-        summary_box_style = ParagraphStyle(
-            "SummaryBox",
-            parent=s["body"],
-            fontSize=10,
-            leading=16,
-            textColor=navy,
-            backColor=HexColor("#eef2f8"),
-            borderColor=accent,
-            borderWidth=1,
-            borderPadding=12,
-            spaceAfter=6 * mm,
+    # ================================================================
+    # SECTION 3: Applicant Income Summary
+    # ================================================================
+    _section_heading(
+        elements, f"{section_counter}. Applicant Income Summary", s, accent
+    )
+    section_counter += 1
+
+    income_data = analysis.get("income_data", [])
+    if income_data:
+        for applicant_info in income_data:
+            app_name = applicant_info.get("applicant", "Applicant")
+            emp_type = applicant_info.get("employment_type", "")
+            role = applicant_info.get("role", "")
+            company = applicant_info.get("company", "")
+
+            desc_parts = [f"<b>{_escape(str(app_name))}</b>"]
+            if emp_type and emp_type != "null":
+                desc_parts.append(
+                    f"Employment: {_escape(str(emp_type).replace('_', ' ').title())}"
+                )
+            if role and role != "null":
+                desc_parts.append(f"Role: {_escape(str(role))}")
+            if company and company != "null":
+                desc_parts.append(f"Company: {_escape(str(company))}")
+            elements.append(Paragraph("  |  ".join(desc_parts), s["body"]))
+
+            tax_years = applicant_info.get("tax_years", [])
+            if tax_years:
+                income_rows = [
+                    ["Tax Year", "Salary", "Dividends", "Total Income", "Tax Due"]
+                ]
+                for ty in tax_years:
+                    income_rows.append(
+                        [
+                            str(ty.get("year", "-")),
+                            str(ty.get("salary", "-"))
+                            if ty.get("salary") and ty["salary"] != "null"
+                            else "-",
+                            str(ty.get("dividends", "-"))
+                            if ty.get("dividends") and ty["dividends"] != "null"
+                            else "-",
+                            str(ty.get("total_income", "-"))
+                            if ty.get("total_income") and ty["total_income"] != "null"
+                            else "-",
+                            str(ty.get("tax_due", "-"))
+                            if ty.get("tax_due") and ty["tax_due"] != "null"
+                            else "-",
+                        ]
+                    )
+                elements.append(
+                    _styled_table(
+                        income_rows,
+                        [28 * mm, 30 * mm, 30 * mm, 33 * mm, 30 * mm],
+                        navy,
+                        light_bg,
+                    )
+                )
+            elements.append(Spacer(1, 3 * mm))
+    else:
+        # Fallback: show profile income
+        if user_profile.get("annual_income"):
+            elements.append(
+                Paragraph(
+                    f"Stated annual income: <b>{_escape(str(user_profile['annual_income']))}</b>  |  "
+                    f"Employment type: <b>{_escape(str(user_profile.get('employment_type', 'Not specified')).replace('_', ' ').title())}</b>",
+                    s["body"],
+                )
+            )
+        else:
+            elements.append(
+                Paragraph(
+                    "No income data available. Upload SA302s, P60s or payslips for a detailed breakdown.",
+                    s["body"],
+                )
+            )
+
+    # ================================================================
+    # SECTION 4: Credit Profile Summary
+    # ================================================================
+    credit = analysis.get("credit_summary", {})
+    credit_points = credit.get("key_points", [])
+    has_credit = (credit.get("score") and credit["score"] != "null") or credit_points
+
+    if has_credit:
+        _section_heading(
+            elements, f"{section_counter}. Credit Profile Summary", s, accent
         )
-        elements.append(Paragraph(_escape(ai_summary), summary_box_style))
+        section_counter += 1
+        if credit.get("score") and credit["score"] != "null":
+            elements.append(
+                Paragraph(
+                    f"Credit Score: <b>{_escape(str(credit['score']))}</b>", s["body"]
+                )
+            )
+        for point in credit_points:
+            if point:
+                elements.append(
+                    Paragraph(f"\u2022  {_escape(str(point))}", s["bullet"])
+                )
+
+    # ================================================================
+    # SECTION 5: Savings & Deposit Position
+    # ================================================================
+    savings_data = analysis.get("savings_data", [])
+    has_savings = savings_data and any(
+        s_item.get("balance") and s_item["balance"] != "null" for s_item in savings_data
+    )
+
+    if has_savings or user_profile.get("deposit_amount"):
+        _section_heading(
+            elements, f"{section_counter}. Savings &amp; Deposit Position", s, accent
+        )
+        section_counter += 1
+
+        if has_savings:
+            savings_rows = [["Account", "Balance", "Date"]]
+            for s_item in savings_data:
+                if s_item.get("balance") and s_item["balance"] != "null":
+                    savings_rows.append(
+                        [
+                            str(s_item.get("account", "-")),
+                            str(s_item.get("balance", "-")),
+                            str(s_item.get("date", "-"))
+                            if s_item.get("date") and s_item["date"] != "null"
+                            else "-",
+                        ]
+                    )
+            if len(savings_rows) > 1:
+                elements.append(
+                    _styled_table(
+                        savings_rows,
+                        [60 * mm, 50 * mm, 45 * mm],
+                        navy,
+                        light_bg,
+                    )
+                )
+        elif user_profile.get("deposit_amount"):
+            elements.append(
+                Paragraph(
+                    f"Stated deposit: <b>{_escape(str(user_profile['deposit_amount']))}</b>",
+                    s["body"],
+                )
+            )
+
+    # ================================================================
+    # SECTION 6: Mortgage Borrowing Capacity
+    # ================================================================
+    _section_heading(
+        elements, f"{section_counter}. Mortgage Borrowing Capacity", s, accent
+    )
+    section_counter += 1
+
+    if annual_income_raw and annual_income_raw > 0:
+        income_val = annual_income_raw
+        cap_rows = [
+            ["Assessment Method", "Joint Income", "4.0x", "4.5x", "5.0x"],
+            [
+                "Stated Income",
+                f"\u00a3{income_val:,}",
+                f"\u00a3{income_val * 4:,}",
+                f"\u00a3{int(income_val * 4.5):,}",
+                f"\u00a3{income_val * 5:,}",
+            ],
+        ]
+
+        # Try to derive additional rows from income_data
+        for applicant_info in income_data:
+            tax_years = applicant_info.get("tax_years", [])
+            if not tax_years:
+                continue
+            # Latest SA302
+            latest = tax_years[0]
+            total_str = latest.get("total_income")
+            if total_str and total_str != "null":
+                # Parse the income amount
+                cleaned = re.sub(r"[^\d.]", "", str(total_str))
+                try:
+                    parsed_income = int(float(cleaned))
+                    if parsed_income > 0:
+                        cap_rows.append(
+                            [
+                                "Latest SA302",
+                                f"\u00a3{parsed_income:,}",
+                                f"\u00a3{parsed_income * 4:,}",
+                                f"\u00a3{int(parsed_income * 4.5):,}",
+                                f"\u00a3{parsed_income * 5:,}",
+                            ]
+                        )
+                except (ValueError, TypeError):
+                    pass
+            # 2-year average
+            if len(tax_years) >= 2:
+                totals = []
+                for ty in tax_years[:2]:
+                    t = ty.get("total_income")
+                    if t and t != "null":
+                        cleaned = re.sub(r"[^\d.]", "", str(t))
+                        try:
+                            totals.append(float(cleaned))
+                        except (ValueError, TypeError):
+                            pass
+                if len(totals) == 2:
+                    avg = int(sum(totals) / 2)
+                    cap_rows.append(
+                        [
+                            "2-Year Average",
+                            f"\u00a3{avg:,}",
+                            f"\u00a3{avg * 4:,}",
+                            f"\u00a3{int(avg * 4.5):,}",
+                            f"\u00a3{avg * 5:,}",
+                        ]
+                    )
+
+        elements.append(
+            _styled_table(
+                cap_rows,
+                [35 * mm, 30 * mm, 30 * mm, 30 * mm, 30 * mm],
+                navy,
+                light_bg,
+            )
+        )
+        elements.append(Spacer(1, 2 * mm))
+        elements.append(
+            Paragraph(
+                "Note: Most high-street lenders offer 4.0x-4.5x income. Select lenders "
+                "(e.g. Habito, Kensington, Halifax) may consider up to 5.0x-5.5x for certain applicants.",
+                s["disclaimer"],
+            )
+        )
+    else:
+        elements.append(
+            Paragraph(
+                "Borrowing capacity cannot be calculated without income data. "
+                "Please complete your profile or upload income documents.",
+                s["body"],
+            )
+        )
+
+    # ================================================================
+    # SECTION 7: Document Checklist
+    # ================================================================
+    _section_heading(elements, f"{section_counter}. Document Checklist", s, accent)
+    section_counter += 1
+
+    if readiness:
+        checklist = readiness.get("checklist", [])
+        pct = readiness.get("overall_percentage", 0)
+
+        elements.append(
+            Paragraph(
+                f"Overall readiness: <b>{pct}%</b>  |  "
+                f"Employment type: <b>{_escape(readiness.get('employment_type', 'employed').replace('_', ' ').title())}</b>",
+                s["body"],
+            )
+        )
+
+        doc_rows = [["Document Required", "Status"]]
+        for item in checklist:
+            status_icon = "\u2713" if item["status"] == "uploaded" else "\u2717"
+            status_label = f"{status_icon} {item['status'].title()}"
+            if item["documents"]:
+                status_label += f" ({', '.join(item['documents'][:2])})"
+            doc_rows.append([item["label"], status_label])
+
+        elements.append(_styled_table(doc_rows, [90 * mm, 65 * mm], navy, light_bg))
+
+        missing = readiness.get("missing_documents", [])
+        if missing:
+            elements.append(Spacer(1, 2 * mm))
+            elements.append(
+                Paragraph(
+                    f"<b>Missing documents ({len(missing)}):</b> {_escape(', '.join(missing))}",
+                    s["body"],
+                )
+            )
+    else:
+        elements.append(
+            Paragraph(
+                "Document checklist unavailable - user profile not found.", s["body"]
+            )
+        )
+
+    # ================================================================
+    # SECTION 8: Key Challenges & Considerations
+    # ================================================================
+    challenges = analysis.get("challenges", [])
+    if challenges:
+        _section_heading(
+            elements,
+            f"{section_counter}. Key Challenges &amp; Considerations",
+            s,
+            accent,
+        )
+        section_counter += 1
+        for i, challenge in enumerate(challenges, 1):
+            if challenge:
+                elements.append(
+                    Paragraph(
+                        f"<b>{i}.</b>  {_escape(str(challenge))}",
+                        s["list_item"],
+                    )
+                )
+
+    # ================================================================
+    # SECTION 9: Recommendations
+    # ================================================================
+    recs = analysis.get("recommendations", {})
+    has_recs = (
+        recs.get("immediate")
+        or recs.get("strengthen")
+        or recs.get("lender_suggestions")
+    )
+
+    if has_recs:
+        _section_heading(elements, f"{section_counter}. Recommendations", s, accent)
+        section_counter += 1
+
+        immediate = recs.get("immediate", [])
+        if immediate:
+            elements.append(Paragraph("<b>Immediate Actions</b>", s["h3"]))
+            for i, action in enumerate(immediate, 1):
+                if action:
+                    elements.append(
+                        Paragraph(
+                            f"<b>{i}.</b>  {_escape(str(action))}", s["list_item"]
+                        )
+                    )
+
+        strengthen = recs.get("strengthen", [])
+        if strengthen:
+            elements.append(Paragraph("<b>To Strengthen Your Position</b>", s["h3"]))
+            for i, action in enumerate(strengthen, 1):
+                if action:
+                    elements.append(
+                        Paragraph(
+                            f"<b>{i}.</b>  {_escape(str(action))}", s["list_item"]
+                        )
+                    )
+
+        lenders = recs.get("lender_suggestions", [])
+        if lenders:
+            elements.append(Paragraph("<b>Suggested Lenders</b>", s["h3"]))
+            for lender in lenders:
+                if lender:
+                    elements.append(
+                        Paragraph(f"\u2022  {_escape(str(lender))}", s["bullet"])
+                    )
+
+    # ================================================================
+    # SECTION 10: Summary & Overall Assessment
+    # ================================================================
+    _section_heading(
+        elements, f"{section_counter}. Summary &amp; Overall Assessment", s, accent
+    )
+    section_counter += 1
+
+    exec_summary = analysis.get("executive_summary", "")
+    position = analysis.get("overall_position", "")
+
+    if position:
+        position_colors = {
+            "STRONG": HexColor("#166534"),
+            "MODERATE": HexColor("#92400e"),
+            "NEEDS WORK": HexColor("#991b1b"),
+        }
+        pos_color = position_colors.get(position.upper(), dark_text)
+        position_style = ParagraphStyle(
+            "PositionBadge",
+            parent=s["body"],
+            fontSize=14,
+            textColor=pos_color,
+            fontName="Helvetica-Bold",
+            spaceAfter=4 * mm,
+            alignment=TA_CENTER,
+        )
+        elements.append(
+            Paragraph(f"Overall Position: {_escape(position.upper())}", position_style)
+        )
+
+    if exec_summary:
+        elements.append(Paragraph(_escape(str(exec_summary)), summary_box_style))
     else:
         elements.append(
             Paragraph(
                 "This report summarises the AI-generated mortgage advice "
-                "based on your uploaded financial documents and consultation Q&amp;A sessions. "
-                "The strategies below were tailored to your specific financial situation "
+                "based on your uploaded financial documents and consultation sessions. "
+                "The analysis above was tailored to your specific financial situation "
                 "using current UK mortgage market data and lender criteria.",
                 s["body"],
             )
         )
 
-    # Summary stats table
-    summary_data = [
-        ["Metric", "Value"],
-        ["Questions Asked", str(len(user_messages))],
-        ["AI Responses", str(len(messages))],
-        ["Consultation Type", "Full Consultation"],
-    ]
-    summary_table = Table(summary_data, colWidths=[80 * mm, 75 * mm])
-    summary_table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), navy),
-                ("TEXTCOLOR", (0, 0), (-1, 0), HexColor("#ffffff")),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("GRID", (0, 0), (-1, -1), 0.5, HexColor("#c8d4e3")),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [HexColor("#ffffff"), light_bg]),
-                ("LEFTPADDING", (0, 0), (-1, -1), 8),
-            ]
-        )
-    )
-    elements.append(Spacer(1, 3 * mm))
-    elements.append(summary_table)
-
-    # 2. Financial Overview
-    elements.append(Paragraph("2. Financial Overview", s["h1"]))
-    elements.append(
-        HRFlowable(
-            width="100%",
-            thickness=1,
-            color=accent,
-            spaceBefore=0,
-            spaceAfter=4 * mm,
-        )
-    )
-    if knowledge_text and "No documents" not in knowledge_text:
-        elements.extend(_md_to_elements(knowledge_text, s))
-    else:
-        elements.append(
-            Paragraph("No financial documents were uploaded for analysis.", s["body"])
-        )
-
-    # 3. Mortgage Strategies
-    elements.append(Paragraph("3. Mortgage Strategies", s["h1"]))
-    elements.append(
-        HRFlowable(
-            width="100%",
-            thickness=1,
-            color=accent,
-            spaceBefore=0,
-            spaceAfter=4 * mm,
-        )
-    )
-
-    if messages:
-        all_msgs = (
-            db.query(Message)
-            .filter(Message.consultation_id == consultation_id)
-            .order_by(Message.created_at.asc())
-            .all()
-        )
-
-        strategy_num = 0
-        for msg in all_msgs:
-            if msg.role == MessageRole.USER:
-                elements.append(
-                    Paragraph(
-                        f'<i>Q: "{_escape(msg.content[:200])}"</i>',
-                        s["question"],
-                    )
-                )
-            elif msg.role == MessageRole.ASSISTANT:
-                strategy_num += 1
-                elements.append(Paragraph(f"Response {strategy_num}", s["h2"]))
-                content = msg.content[:5000]
-                elements.extend(_md_to_elements(content, s))
-                elements.append(Spacer(1, 3 * mm))
-                elements.append(
-                    HRFlowable(
-                        width="60%",
-                        thickness=0.5,
-                        color=HexColor("#e5e7eb"),
-                        spaceBefore=2 * mm,
-                        spaceAfter=2 * mm,
-                    )
-                )
-    else:
-        elements.append(
-            Paragraph(
-                "No consultation messages yet. Start a chat to receive mortgage advice.",
-                s["body"],
-            )
-        )
-
-    # 4. Recommended Actions
-    elements.append(Paragraph("4. Recommended Next Steps", s["h1"]))
-    elements.append(
-        HRFlowable(
-            width="100%",
-            thickness=1,
-            color=accent,
-            spaceBefore=0,
-            spaceAfter=4 * mm,
-        )
-    )
-
-    actions = [
-        ["Priority", "Action", "Deadline"],
-        [
-            "HIGH",
-            "Review all mortgage options with a qualified mortgage broker",
-            "Within 2 weeks",
-        ],
-        [
-            "HIGH",
-            "Obtain a Mortgage in Principle (AIP) from recommended lender",
-            "Before property search",
-        ],
-        [
-            "MEDIUM",
-            "Ensure all required documents are gathered and up to date",
-            "Before full application",
-        ],
-        [
-            "MEDIUM",
-            "Check credit report and address any issues",
-            "Immediately",
-        ],
-        [
-            "LOW",
-            "Research solicitors and surveyors for the conveyancing process",
-            "After offer accepted",
-        ],
-    ]
-    action_table = Table(actions, colWidths=[25 * mm, 95 * mm, 35 * mm])
-    action_table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), navy),
-                ("TEXTCOLOR", (0, 0), (-1, 0), HexColor("#ffffff")),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("GRID", (0, 0), (-1, -1), 0.5, HexColor("#c8d4e3")),
-                (
-                    "ROWBACKGROUNDS",
-                    (0, 1),
-                    (-1, -1),
-                    [HexColor("#ffffff"), light_bg],
-                ),
-                ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ]
-        )
-    )
-    elements.append(action_table)
-
-    # 5. Disclaimer
+    # ================================================================
+    # SECTION 11: Disclaimer
+    # ================================================================
     elements.append(Spacer(1, 10 * mm))
     elements.append(
         HRFlowable(
@@ -1267,10 +1638,10 @@ def generate_strategy_report_pdf(
             spaceAfter=3 * mm,
         )
     )
-    elements.append(Paragraph("<b>5. Disclaimer</b>", s["body"]))
+    elements.append(Paragraph(f"<b>{section_counter}. Disclaimer</b>", s["body"]))
     elements.append(
         Paragraph(
-            "IMPORTANT: This report contains AI-generated advice and should NOT be "
+            "IMPORTANT: This report contains AI-generated analysis and should NOT be "
             "considered as professional mortgage advice regulated by the FCA. The strategies and "
             "recommendations contained herein are generated by an artificial intelligence "
             "system and have not been reviewed by a qualified mortgage broker. "
