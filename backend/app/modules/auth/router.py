@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from app.database import get_db
 from app.modules.auth.schemas import (
@@ -14,6 +15,7 @@ from app.modules.auth.schemas import (
 )
 from app.modules.auth import services as auth_services
 from app.modules.users import services as user_services
+from app.modules.users.models import User
 from app.modules.payments.models import (
     Consultation,
     ConsultationStatus,
@@ -30,7 +32,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     "/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED
 )
 @limiter.limit("5/minute")
-def register(request: Request, data: RegisterRequest, db: Session = Depends(get_db)):
+def register(
+    request: Request,
+    data: RegisterRequest,
+    db: Session = Depends(get_db),
+    invite: Optional[str] = Query(None),
+    partner: Optional[int] = Query(None),
+):
     existing = user_services.get_user_by_email(db, data.email)
     if existing:
         raise HTTPException(
@@ -45,6 +53,23 @@ def register(request: Request, data: RegisterRequest, db: Session = Depends(get_
     user = user_services.create_user(
         db, email=data.email, password=data.password, full_name=data.full_name
     )
+
+    # Handle partner invite linking
+    if invite and partner:
+        inviting_user = (
+            db.query(User)
+            .filter(
+                User.id == partner,
+                User.invite_token == invite,
+            )
+            .first()
+        )
+        if inviting_user and not inviting_user.partner_user_id:
+            # Link both users as partners
+            inviting_user.partner_user_id = user.id
+            user.partner_user_id = inviting_user.id
+            inviting_user.invite_token = None
+            db.flush()
 
     # Create free trial payment (£0)
     trial_payment = Payment(

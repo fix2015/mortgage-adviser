@@ -21,6 +21,10 @@ import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { MovingCostPage } from "@/pages/MovingCostPage";
+import { PredictionsPage } from "@/pages/PredictionsPage";
+import { HealthCheckPage } from "@/pages/HealthCheckPage";
+import { ReferencePage } from "@/pages/ReferencePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +60,10 @@ export default function App() {
                 <Route path="compare" element={<ComparePage />} />
                 <Route path="strategy" element={<StrategyPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="moving-costs" element={<MovingCostPage />} />
+                <Route path="predictions" element={<PredictionsPage />} />
+                <Route path="health-check" element={<HealthCheckPage />} />
+                <Route path="reference" element={<ReferencePage />} />
               </Route>
 
               <Route path="*" element={<NotFoundPage />} />

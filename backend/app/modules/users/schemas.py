@@ -28,6 +28,25 @@ class MortgageInfoUpdate(BaseModel):
     first_time_buyer: Optional[bool] = None
 
 
+class PartnerInviteRequest(BaseModel):
+    email: EmailStr
+    name: str
+
+
+class PartnerInviteResponse(BaseModel):
+    invite_url: str
+    invite_token: str
+
+
+class PartnerStatusResponse(BaseModel):
+    has_partner: bool
+    partner_email: Optional[str] = None
+    partner_name: Optional[str] = None
+    partner_registered: bool = False
+    invited_email: Optional[str] = None
+    invited_name: Optional[str] = None
+
+
 class UserResponse(BaseModel):
     id: int
     email: str
@@ -41,6 +60,7 @@ class UserResponse(BaseModel):
     deposit_amount: Optional[int] = None
     first_time_buyer: bool = True
     onboarding_completed: bool = False
+    partner_user_id: Optional[int] = None
 
     model_config = {"from_attributes": True}
 

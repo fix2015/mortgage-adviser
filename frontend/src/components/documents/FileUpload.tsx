@@ -1,8 +1,9 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
-import { Upload, FileText, AlertCircle } from "lucide-react";
+import { Upload, FileText, AlertCircle, Camera } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { CameraUpload } from "@/components/documents/CameraUpload";
 
 interface FileUploadProps {
   onUpload: (file: File) => Promise<void>;
@@ -25,6 +26,8 @@ const defaultAccept = {
 };
 
 export function FileUpload({ onUpload, isUploading, accept = defaultAccept }: FileUploadProps) {
+  const [cameraOpen, setCameraOpen] = useState(false);
+
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       for (const file of acceptedFiles) {
@@ -99,10 +102,32 @@ export function FileUpload({ onUpload, isUploading, accept = defaultAccept }: Fi
         </div>
       )}
 
-      <div className="mt-4 flex items-center gap-2 text-xs text-ds-text-muted">
-        <FileText className="h-3.5 w-3.5" />
-        Your documents are encrypted and stored securely.
+      <div className="mt-4 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs text-ds-text-muted">
+          <FileText className="h-3.5 w-3.5" />
+          Your documents are encrypted and stored securely.
+        </div>
+        <button
+          type="button"
+          onClick={() => setCameraOpen(true)}
+          disabled={isUploading}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-lg border border-ds-border-default bg-ds-bg-surface px-3 py-2 text-xs font-medium text-ds-text-secondary transition-all duration-200",
+            "hover:border-ds-border-accent hover:text-ds-text-accent hover:bg-ds-accent-primary/5",
+            isUploading && "pointer-events-none opacity-50"
+          )}
+        >
+          <Camera className="h-3.5 w-3.5" />
+          Scan with Camera
+        </button>
       </div>
+
+      <CameraUpload
+        isOpen={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onUpload={onUpload}
+        isUploading={isUploading}
+      />
     </div>
   );
 }

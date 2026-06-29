@@ -1,5 +1,5 @@
 import client from "./client";
-import type { ChatMessage, ChatSession, ReadinessScoreResponse, NewsResponse, StrategyResponse, FinancialSummary, BankSuggestion } from "@/types";
+import type { ChatMessage, ChatSession, ReadinessScoreResponse, NewsResponse, StrategyResponse, FinancialSummary, BankSuggestion, LenderPredictionsResponse, HealthCheckRequest, HealthCheckResponse, EmployerReferenceResponse } from "@/types";
 
 export async function getChatSession(): Promise<ChatSession> {
   const response = await client.get<ChatSession>("/chat/session");
@@ -71,6 +71,21 @@ export async function compareBanks(params: {
   first_time_buyer: boolean;
 }): Promise<{ recommendations: BankSuggestion[] }> {
   const response = await client.post("/chat/compare-banks", params);
+  return response.data;
+}
+
+export async function getLenderPredictions(): Promise<LenderPredictionsResponse> {
+  const response = await client.get<LenderPredictionsResponse>("/chat/lender-predictions");
+  return response.data;
+}
+
+export async function runHealthCheck(params: HealthCheckRequest): Promise<HealthCheckResponse> {
+  const response = await client.post<HealthCheckResponse>("/chat/health-check", params);
+  return response.data;
+}
+
+export async function getEmployerReference(): Promise<EmployerReferenceResponse> {
+  const response = await client.get<EmployerReferenceResponse>("/chat/employer-reference");
   return response.data;
 }
 

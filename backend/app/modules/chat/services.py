@@ -751,6 +751,192 @@ END OF BRIEFING
     return briefing
 
 
+# ---------- Lender Decision Predictor (#38) ----------
+
+
+def predict_lender_decisions(db: Session, consultation_id: int, user_id: int) -> dict:
+    """Use OpenAI to predict approval likelihood per lender based on user's documents."""
+    import json as _json
+
+    cache_key = f"lender_predictions:{consultation_id}"
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
+
+    from app.modules.users.models import User
+
+    knowledge_base = get_knowledge_base_text(db, consultation_id)
+    user = db.query(User).filter(User.id == user_id).first()
+
+    prompt = f"""Based on this applicant's documents, predict the likelihood of approval from each major UK mortgage lender.
+
+    Knowledge base: {knowledge_base[:6000]}
+    Employment type: {user.employment_type if user else "unknown"}
+    Annual income: {user.annual_income if user else "unknown"}
+
+    Return ONLY valid JSON array (no fences):
+    [{{"lender": "Halifax", "prediction": 92, "verdict": "LIKELY", "reason": "Accepts director salary + dividends from SA302", "risk_factors": ["Income inconsistency in 2023-24"], "strengths": ["Strong deposit", "Clean credit"]}}, ...]
+
+    Include these lenders: Halifax, Nationwide, HSBC, Barclays, NatWest, Kensington, Vida Homeloans, Kent Reliance, Skipton, TSB
+    prediction should be 0-100 percentage.
+    verdict should be LIKELY (70+), POSSIBLE (40-69), or UNLIKELY (0-39).
+    """
+
+    try:
+        client = get_openai_client()
+        response = client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=2000,
+            temperature=0.3,
+        )
+        raw = response.choices[0].message.content.strip()
+        if raw.startswith("```"):
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw)
+        data = _json.loads(raw)
+    except Exception:
+        data = []
+
+    if not isinstance(data, list):
+        data = []
+
+    predictions = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        prediction_val = int(item.get("prediction", 50))
+        prediction_val = max(0, min(100, prediction_val))
+        if prediction_val >= 70:
+            verdict = "LIKELY"
+        elif prediction_val >= 40:
+            verdict = "POSSIBLE"
+        else:
+            verdict = "UNLIKELY"
+        predictions.append(
+            {
+                "lender": str(item.get("lender", "Unknown")),
+                "prediction": prediction_val,
+                "verdict": verdict,
+                "reason": str(item.get("reason", "")),
+                "risk_factors": item.get("risk_factors", []),
+                "strengths": item.get("strengths", []),
+            }
+        )
+
+    # Sort by prediction percentage descending
+    predictions.sort(key=lambda x: x["prediction"], reverse=True)
+
+    result = {"predictions": predictions}
+    set_cached(cache_key, result)
+    return result
+
+
+# ---------- Mortgage Health Check (#37) ----------
+
+
+def mortgage_health_check(
+    current_rate: float,
+    current_balance: int,
+    remaining_term: int,
+    current_lender: str,
+) -> dict:
+    """Compare current mortgage against typical best available rates. Pure calculation, no AI."""
+    best_2yr = 3.89  # Best 2-year fixed rate
+
+    current_mr = current_rate / 100 / 12
+    np = remaining_term * 12
+
+    if current_mr > 0 and np > 0:
+        current_mp = (
+            current_balance
+            * current_mr
+            * (1 + current_mr) ** np
+            / ((1 + current_mr) ** np - 1)
+        )
+    else:
+        current_mp = current_balance / max(np, 1)
+
+    best_mr = best_2yr / 100 / 12
+    if best_mr > 0 and np > 0:
+        best_mp = (
+            current_balance * best_mr * (1 + best_mr) ** np / ((1 + best_mr) ** np - 1)
+        )
+    else:
+        best_mp = current_balance / max(np, 1)
+
+    monthly_saving = current_mp - best_mp
+    annual_saving = monthly_saving * 12
+
+    # Typical ERC + arrangement fee
+    estimated_erc = current_balance * 0.02  # 2% ERC estimate
+    arrangement_fee = 999
+    total_switch_cost = estimated_erc + arrangement_fee
+    break_even_months = total_switch_cost / monthly_saving if monthly_saving > 0 else 0
+
+    return {
+        "current_monthly": round(current_mp, 2),
+        "best_available_monthly": round(best_mp, 2),
+        "monthly_saving": round(monthly_saving, 2),
+        "annual_saving": round(annual_saving, 2),
+        "best_rate_available": best_2yr,
+        "switch_cost_estimate": round(total_switch_cost, 2),
+        "break_even_months": round(break_even_months, 1),
+        "recommendation": "SWITCH" if annual_saving > total_switch_cost / 2 else "WAIT",
+        "current_rate": current_rate,
+        "current_balance": current_balance,
+        "remaining_term": remaining_term,
+        "current_lender": current_lender,
+    }
+
+
+# ---------- Employer Reference Auto-Generator (#40) ----------
+
+
+def generate_employer_reference(db: Session, consultation_id: int, user_id: int) -> str:
+    """Use OpenAI to generate a draft employer reference letter for mortgage application."""
+    from app.modules.users.models import User
+
+    knowledge_base = get_knowledge_base_text(db, consultation_id)
+    user = db.query(User).filter(User.id == user_id).first()
+
+    prompt = f"""Generate a professional UK employer reference letter for a mortgage application.
+
+    Based on these documents: {knowledge_base[:4000]}
+    Employee name: {user.full_name if user else "Employee"}
+
+    The letter should:
+    - Be on company letterhead format (indicate where logo goes)
+    - State employment start date, role, and salary
+    - Confirm employment is permanent/ongoing
+    - State salary amount and payment frequency
+    - Be signed by a director or HR manager
+    - Include company name, address, registration number
+    - Be dated today
+    - Be professional and suitable for a UK mortgage lender
+
+    Return the full letter text ready to print.
+    """
+
+    try:
+        client = get_openai_client()
+        response = client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1500,
+            temperature=0.3,
+        )
+        letter_text = response.choices[0].message.content.strip()
+    except Exception:
+        letter_text = (
+            "Unable to generate employer reference letter. "
+            "Please ensure you have uploaded employment documents "
+            "(payslips, contract) and try again."
+        )
+
+    return letter_text
+
+
 def get_consultation_messages(
     db: Session, consultation_id: int, skip: int = 0, limit: int = 100
 ) -> tuple[list[Message], int]:

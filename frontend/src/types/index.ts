@@ -229,3 +229,48 @@ export interface BankSuggestion {
   fees: number;
   reason: string;
 }
+
+// ---------- Lender Predictions (#38) ----------
+
+export interface LenderPrediction {
+  lender: string;
+  prediction: number;
+  verdict: "LIKELY" | "POSSIBLE" | "UNLIKELY";
+  reason: string;
+  risk_factors: string[];
+  strengths: string[];
+}
+
+export interface LenderPredictionsResponse {
+  predictions: LenderPrediction[];
+}
+
+// ---------- Mortgage Health Check (#37) ----------
+
+export interface HealthCheckRequest {
+  current_rate: number;
+  current_balance: number;
+  remaining_term: number;
+  current_lender: string;
+}
+
+export interface HealthCheckResponse {
+  current_monthly: number;
+  best_available_monthly: number;
+  monthly_saving: number;
+  annual_saving: number;
+  best_rate_available: number;
+  switch_cost_estimate: number;
+  break_even_months: number;
+  recommendation: "SWITCH" | "WAIT";
+  current_rate: number;
+  current_balance: number;
+  remaining_term: number;
+  current_lender: string;
+}
+
+// ---------- Employer Reference (#40) ----------
+
+export interface EmployerReferenceResponse {
+  letter_text: string;
+}

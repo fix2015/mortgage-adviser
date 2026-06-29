@@ -151,3 +151,51 @@ class NewsArticle(BaseModel):
 
 class NewsResponse(BaseModel):
     articles: list[NewsArticle]
+
+
+# ---------- Lender Predictions (#38) ----------
+
+
+class LenderPrediction(BaseModel):
+    lender: str
+    prediction: int
+    verdict: str
+    reason: str
+    risk_factors: list[str] = []
+    strengths: list[str] = []
+
+
+class LenderPredictionsResponse(BaseModel):
+    predictions: list[LenderPrediction]
+
+
+# ---------- Mortgage Health Check (#37) ----------
+
+
+class HealthCheckRequest(BaseModel):
+    current_rate: float
+    current_balance: int
+    remaining_term: int
+    current_lender: str
+
+
+class HealthCheckResponse(BaseModel):
+    current_monthly: float
+    best_available_monthly: float
+    monthly_saving: float
+    annual_saving: float
+    best_rate_available: float
+    switch_cost_estimate: float
+    break_even_months: float
+    recommendation: str
+    current_rate: float
+    current_balance: int
+    remaining_term: int
+    current_lender: str
+
+
+# ---------- Employer Reference (#40) ----------
+
+
+class EmployerReferenceResponse(BaseModel):
+    letter_text: str

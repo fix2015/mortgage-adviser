@@ -10,6 +10,10 @@ import { ProgressTracker } from "@/components/dashboard/ProgressTracker";
 import { ReadinessScore } from "@/components/dashboard/ReadinessScore";
 import { FinancialSummary } from "@/components/dashboard/FinancialSummary";
 import { BankSuggestions } from "@/components/dashboard/BankSuggestions";
+import { MortgageTwin } from "@/components/dashboard/MortgageTwin";
+import { MortgageCountdown } from "@/components/dashboard/MortgageCountdown";
+import { MortgageTimeline } from "@/components/dashboard/MortgageTimeline";
+import { PartnerInvite } from "@/components/dashboard/PartnerInvite";
 import { createCheckout } from "@/api/payments";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -172,6 +176,12 @@ function NoDocumentsView({ user, consultation, questionsLimit }: { user: ReturnT
             <span className="text-sm font-medium">Joint Application</span>
           </button>
         </div>
+
+        {isJoint && (
+          <div className="mb-6">
+            <PartnerInvite />
+          </div>
+        )}
 
         {/* Employment type selector */}
         <div className="flex rounded-lg border border-ds-border-default bg-ds-bg-tertiary p-0.5 mb-6">
@@ -366,7 +376,12 @@ export function DashboardPage() {
       <ProgressTracker documentsCount={documents.length} hasProcessedDocument={documents.some((d) => d.status === "processed")} questionsUsed={questionsUsed} questionsLimit={questionsLimit} hasDownloadedReport={localStorage.getItem("report_downloaded") === "true"} />
       <FinancialSummary />
       <ReadinessScore />
+      {readinessPercentage < 80 && <MortgageTwin />}
       {readinessPercentage >= 80 && <BankSuggestions />}
+      {readinessPercentage >= 80 && <MortgageTwin />}
+      <MortgageCountdown />
+      <MortgageTimeline propertyValue={user?.property_value || 300000} readinessPercentage={readinessPercentage} />
+      <PartnerInvite />
 
       <div><h1 className="text-2xl font-bold text-ds-text-primary">Welcome back, {user?.full_name?.split(" ")[0] || "there"}</h1><p className="text-sm text-ds-text-secondary mt-1">Your AI mortgage consultation dashboard</p></div>
 

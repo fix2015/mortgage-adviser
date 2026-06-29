@@ -14,6 +14,10 @@ import {
   Calculator,
   BarChart3,
   Settings,
+  Truck,
+  ShieldCheck,
+  HeartPulse,
+  FileSignature,
 } from "lucide-react";
 
 const sidebarLinks = [
@@ -22,6 +26,10 @@ const sidebarLinks = [
   { to: "/dashboard/documents", icon: FileText, label: "Documents", end: false },
   { to: "/dashboard/calculator", icon: Calculator, label: "Calculator", end: false },
   { to: "/dashboard/compare", icon: BarChart3, label: "Compare Lenders", end: false },
+  { to: "/dashboard/moving-costs", icon: Truck, label: "Moving Costs", end: false },
+  { to: "/dashboard/predictions", icon: ShieldCheck, label: "Predictions", end: false },
+  { to: "/dashboard/health-check", icon: HeartPulse, label: "Health Check", end: false },
+  { to: "/dashboard/reference", icon: FileSignature, label: "Reference Letter", end: false },
   { to: "/dashboard/strategy", icon: Download, label: "Strategy", end: false },
   { to: "/dashboard/settings", icon: Settings, label: "Settings", end: false },
 ];

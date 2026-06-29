@@ -1,4 +1,5 @@
 import json
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
@@ -7,7 +8,14 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.modules.users.models import User
-from app.modules.users.schemas import UserResponse, UserUpdate, MortgageInfoUpdate
+from app.modules.users.schemas import (
+    UserResponse,
+    UserUpdate,
+    MortgageInfoUpdate,
+    PartnerInviteRequest,
+    PartnerInviteResponse,
+    PartnerStatusResponse,
+)
 from app.modules.users import services
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -59,6 +67,57 @@ def update_mortgage_info(
     update_data = data.model_dump(exclude_unset=True)
     update_data["onboarding_completed"] = True
     return services.update_user(db, current_user, **update_data)
+
+
+@router.post("/invite-partner", response_model=PartnerInviteResponse)
+def invite_partner(
+    data: PartnerInviteRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Generate an invite link for a partner/spouse to join as co-applicant."""
+    if current_user.partner_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You already have a linked partner",
+        )
+
+    invite_token = str(uuid.uuid4())
+    current_user.invite_token = invite_token
+    current_user.invited_partner_email = data.email.lower().strip()
+    current_user.invited_partner_name = data.name.strip()
+    db.commit()
+
+    invite_url = f"https://mortgage-advisor.probooking.app/register?invite={invite_token}&partner={current_user.id}"
+    return PartnerInviteResponse(invite_url=invite_url, invite_token=invite_token)
+
+
+@router.get("/partner-status", response_model=PartnerStatusResponse)
+def get_partner_status(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get the status of the partner invite/link."""
+    has_partner = current_user.partner_user_id is not None
+    partner_email = None
+    partner_name = None
+    partner_registered = False
+
+    if has_partner:
+        partner = services.get_user_by_id(db, current_user.partner_user_id)
+        if partner:
+            partner_email = partner.email
+            partner_name = partner.full_name
+            partner_registered = True
+
+    return PartnerStatusResponse(
+        has_partner=has_partner,
+        partner_email=partner_email,
+        partner_name=partner_name,
+        partner_registered=partner_registered,
+        invited_email=current_user.invited_partner_email,
+        invited_name=current_user.invited_partner_name,
+    )
 
 
 @router.get("/me/export")

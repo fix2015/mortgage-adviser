@@ -33,6 +33,12 @@ class User(Base):
     first_time_buyer = Column(Boolean, default=True, nullable=False)
     onboarding_completed = Column(Boolean, default=False, nullable=False)
 
+    # Partner invite fields
+    partner_user_id = Column(Integer, nullable=True)
+    invite_token = Column(String(255), nullable=True)
+    invited_partner_email = Column(String(255), nullable=True)
+    invited_partner_name = Column(String(255), nullable=True)
+
     # Password reset fields
     password_reset_token = Column(String(255), nullable=True)
     password_reset_expires = Column(DateTime, nullable=True)

@@ -31,6 +31,10 @@ from app.modules.chat.schemas import (
     NewsResponse,
     NewsArticle,
     FinancialSummaryResponse,
+    LenderPredictionsResponse,
+    HealthCheckRequest,
+    HealthCheckResponse,
+    EmployerReferenceResponse,
 )
 from app.modules.chat import services
 from app.modules.documents.services import upload_to_s3, get_s3_client
@@ -389,6 +393,66 @@ def get_news():
         ),
     ]
     return NewsResponse(articles=articles)
+
+
+@router.get("/lender-predictions", response_model=LenderPredictionsResponse)
+@limiter.limit("5/minute")
+def get_lender_predictions(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    consultation: Consultation = Depends(get_active_consultation),
+    db: Session = Depends(get_db),
+):
+    """Predict approval likelihood per lender based on user's documents."""
+    result = services.predict_lender_decisions(
+        db=db,
+        consultation_id=consultation.id,
+        user_id=current_user.id,
+    )
+    return LenderPredictionsResponse(**result)
+
+
+@router.post("/health-check", response_model=HealthCheckResponse)
+def run_health_check(
+    data: HealthCheckRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Compare current mortgage against best available rates. No active consultation needed."""
+    if data.current_rate <= 0 or data.current_rate > 20:
+        raise HTTPException(
+            status_code=400, detail="Current rate must be between 0% and 20%"
+        )
+    if data.current_balance <= 0:
+        raise HTTPException(status_code=400, detail="Current balance must be positive")
+    if data.remaining_term < 1 or data.remaining_term > 40:
+        raise HTTPException(
+            status_code=400, detail="Remaining term must be between 1 and 40 years"
+        )
+
+    result = services.mortgage_health_check(
+        current_rate=data.current_rate,
+        current_balance=data.current_balance,
+        remaining_term=data.remaining_term,
+        current_lender=data.current_lender,
+    )
+    return HealthCheckResponse(**result)
+
+
+@router.get("/employer-reference", response_model=EmployerReferenceResponse)
+@limiter.limit("5/minute")
+def get_employer_reference(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    consultation: Consultation = Depends(get_active_consultation),
+    db: Session = Depends(get_db),
+):
+    """Generate a draft employer reference letter based on uploaded documents."""
+    letter_text = services.generate_employer_reference(
+        db=db,
+        consultation_id=consultation.id,
+        user_id=current_user.id,
+    )
+    return EmployerReferenceResponse(letter_text=letter_text)
 
 
 @router.post("/finish")
