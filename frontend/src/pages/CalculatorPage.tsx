@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
 import { Calculator } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { formatPounds } from "@/utils/format";

@@ -17,7 +17,7 @@ export function StrategyDownload() {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchStrategies = async () => { try { const data = await getStrategies(); setStrategies(data.strategies); setTotal(data.total); } catch {} finally { setIsLoading(false); } };
+  const fetchStrategies = async () => { try { const data = await getStrategies(); setStrategies(data.strategies); setTotal(data.total); } catch { /* ignored */ } finally { setIsLoading(false); } };
   useEffect(() => { fetchStrategies(); }, []);
 
   const handleGenerate = async () => {

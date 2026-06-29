@@ -56,7 +56,7 @@ export function ReadinessScore() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchScore = useCallback(async (isRefresh = false) => {
-    if (!isRefresh) { try { const c = localStorage.getItem("readiness_cache"); if (c) { const { data: d, timestamp } = JSON.parse(c); if (Date.now() - timestamp < 3600000) { setData(d); setLoading(false); return; } } } catch {} }
+    if (!isRefresh) { try { const c = localStorage.getItem("readiness_cache"); if (c) { const { data: d, timestamp } = JSON.parse(c); if (Date.now() - timestamp < 3600000) { setData(d); setLoading(false); return; } } } catch { /* ignored */ } }
     if (isRefresh) setRefreshing(true); else setLoading(true);
     try { const result = await getReadinessScore(); setData(result); localStorage.setItem("readiness_cache", JSON.stringify({ data: result, timestamp: Date.now() })); } catch { /* fail silently */ } finally { setLoading(false); setRefreshing(false); }
   }, []);

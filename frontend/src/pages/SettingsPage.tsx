@@ -13,8 +13,8 @@ export function SettingsPage() {
   const [exporting, setExporting] = useState(false); const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false); const [deleteConfirm, setDeleteConfirm] = useState("");
 
-  const handleExport = async () => { setExporting(true); try { const blob = await exportMyData(); const url = window.URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "my_data_export.json"; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); } catch {} finally { setExporting(false); } };
-  const handleDelete = async () => { if (deleteConfirm !== "DELETE") return; setDeleting(true); try { await deleteMyAccount(); await logout(); navigate("/"); } catch { setDeleting(false); } };
+  const handleExport = async () => { setExporting(true); try { const blob = await exportMyData(); const url = window.URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "my_data_export.json"; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); } catch { /* ignored */ } finally { setExporting(false); } };
+  const handleDelete = async () => { if (deleteConfirm !== "DELETE") return; setDeleting(true); try { await deleteMyAccount(); await logout(); navigate("/"); } catch { /* ignored */ setDeleting(false); } };
 
   return (
     <div className="p-6 h-full overflow-auto"><div className="max-w-2xl mx-auto">

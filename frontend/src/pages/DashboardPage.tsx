@@ -29,9 +29,9 @@ export function DashboardPage() {
   useEffect(() => {
     const sessionId = searchParams.get("session_id"); const payment = searchParams.get("payment");
     const load = async () => {
-      if (payment === "success" && sessionId) { try { await verifyPayment(sessionId); setPaymentVerified(true); } catch {} }
-      try { const c = await getActiveConsultation(); setConsultation(c); } catch { setConsultation(null); }
-      try { const s = await getStrategies(); setStrategyCount(s.total); } catch { setStrategyCount(0); }
+      if (payment === "success" && sessionId) { try { await verifyPayment(sessionId); setPaymentVerified(true); } catch { /* ignored */ } }
+      try { const c = await getActiveConsultation(); setConsultation(c); } catch { /* ignored */ setConsultation(null); }
+      try { const s = await getStrategies(); setStrategyCount(s.total); } catch { /* ignored */ setStrategyCount(0); }
       setConsultationLoading(false);
     };
     load();
