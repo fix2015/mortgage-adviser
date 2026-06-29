@@ -76,7 +76,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   const handleUpload = async (file: File) => { await upload(file); setUploadedFile(true); };
-  const handleQuestionClick = (question: string) => { onComplete(); navigate(`/dashboard/chat?q=${encodeURIComponent(question)}`); };
+  const completeOnboarding = async () => {
+    try { await updateBuyerInfo({}); await refreshUser(); } catch { /* ignored */ }
+    onComplete();
+  };
+  const handleQuestionClick = async (question: string) => { await completeOnboarding(); navigate(`/dashboard/chat?q=${encodeURIComponent(question)}`); };
   const questions = QUESTIONS[buyerType] || QUESTIONS["first_time"];
 
   return (
@@ -110,7 +114,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <motion.div key="step-2" custom={direction} variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                 <div className="text-center mb-6"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-ds-accent-primary/20 to-ds-accent-secondary/20 border border-ds-accent-primary/20 mx-auto mb-4"><MessageSquare className="h-7 w-7 text-ds-text-accent" /></div><h2 className="text-xl font-bold text-ds-text-primary">Ask your first question</h2><p className="text-sm text-ds-text-secondary mt-1">Choose a question or explore on your own</p></div>
                 <div className="grid grid-cols-1 gap-2.5 mb-6">{questions.map((q, i) => (<motion.button key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} onClick={() => handleQuestionClick(q.question)} className="flex items-center gap-3 rounded-xl border border-ds-border-default bg-ds-bg-tertiary p-4 text-left transition-all duration-200 hover:border-ds-accent-primary/40 hover:bg-ds-accent-primary/5 cursor-pointer group"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ds-accent-primary/10 group-hover:bg-ds-accent-primary/20 transition-colors"><MessageSquare className="h-4 w-4 text-ds-text-accent" /></div><span className="text-sm text-ds-text-primary font-medium">{q.text}</span><ChevronRight className="h-4 w-4 text-ds-text-muted ml-auto opacity-0 group-hover:opacity-100 transition-opacity" /></motion.button>))}</div>
-                <div className="flex gap-3"><Button variant="secondary" size="lg" className="flex-1" onClick={goBack} leftIcon={<ChevronLeft className="h-4 w-4" />}>Back</Button><Button variant="ghost" size="lg" className="flex-1" onClick={onComplete}>I'll explore on my own</Button></div>
+                <div className="flex gap-3"><Button variant="secondary" size="lg" className="flex-1" onClick={goBack} leftIcon={<ChevronLeft className="h-4 w-4" />}>Back</Button><Button variant="ghost" size="lg" className="flex-1" onClick={completeOnboarding}>I'll explore on my own</Button></div>
               </motion.div>
             )}
           </AnimatePresence>

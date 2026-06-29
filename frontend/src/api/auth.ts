@@ -32,7 +32,7 @@ export interface BuyerInfoData {
 }
 
 export async function updateBuyerInfo(data: BuyerInfoData): Promise<User> {
-  const response = await client.patch<User>("/users/me/business", data);
+  const response = await client.patch<User>("/users/me/mortgage-info", data);
   return response.data;
 }
 
