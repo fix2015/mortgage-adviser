@@ -20,6 +20,8 @@ const defaultAccept = {
   "application/vnd.ms-excel": [".xls"],
   "application/zip": [".zip"],
   "application/x-zip-compressed": [".zip"],
+  "image/jpeg": [".jpg", ".jpeg"],
+  "image/png": [".png"],
 };
 
 export function FileUpload({ onUpload, isUploading, accept = defaultAccept }: FileUploadProps) {
@@ -81,7 +83,7 @@ export function FileUpload({ onUpload, isUploading, accept = defaultAccept }: Fi
                 Drag & drop files here, or click to browse
               </p>
               <p className="text-xs text-ds-text-muted">
-                PDF, DOC, DOCX, TXT, CSV, XLS, XLSX, ZIP up to 50MB
+                PDF, DOC, DOCX, TXT, CSV, JPG, PNG, ZIP up to 50MB
               </p>
             </>
           )}

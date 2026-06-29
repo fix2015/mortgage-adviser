@@ -456,15 +456,31 @@ def calculate_readiness(db: Session, user_id: int, consultation_id: int) -> dict
     missing = []
     uploaded_count = 0
 
+    # Categories that can satisfy other categories
+    # e.g., bank_statements can count as deposit proof
+    CATEGORY_ALIASES = {
+        "deposit": {"deposit", "bank_statements"},
+        "bank_statements": {"bank_statements", "deposit"},
+        "address": {"address", "id"},
+        "income": {"income", "tax_returns", "payslips", "employment"},
+    }
+
     for item in required_docs:
         cat = item["category"]
-        if cat in uploaded_categories:
+        # Check if this category or any alias has been uploaded
+        matching_categories = CATEGORY_ALIASES.get(cat, {cat})
+        matched = matching_categories & uploaded_categories
+        if matched:
+            # Collect docs from all matching categories
+            matched_docs = []
+            for mc in matched:
+                matched_docs.extend(uploaded_docs_by_category.get(mc, []))
             checklist.append(
                 {
                     "category": cat,
                     "label": item["label"],
                     "status": "uploaded",
-                    "documents": uploaded_docs_by_category.get(cat, []),
+                    "documents": matched_docs,
                 }
             )
             uploaded_count += 1

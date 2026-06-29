@@ -20,9 +20,12 @@ ALLOWED_FILE_TYPES = {
     "application/msword": "doc",
     "text/plain": "txt",
     "text/csv": "csv",
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/jpg": "jpg",
 }
 
-ALLOWED_EXTENSIONS = {"pdf", "docx", "doc", "txt", "csv"}
+ALLOWED_EXTENSIONS = {"pdf", "docx", "doc", "txt", "csv", "jpg", "jpeg", "png"}
 
 
 def get_s3_client():
@@ -98,6 +101,10 @@ def extract_text_from_csv(file_content: bytes) -> str:
     return file_content.decode("utf-8", errors="replace")
 
 
+def extract_text_from_image(file_content: bytes) -> str:
+    return "Image document (passport, driving licence, or ID scan). Content requires visual inspection."
+
+
 def extract_text(file_content: bytes, file_type: str) -> str:
     extractors = {
         "pdf": extract_text_from_pdf,
@@ -105,6 +112,9 @@ def extract_text(file_content: bytes, file_type: str) -> str:
         "doc": extract_text_from_docx,
         "txt": extract_text_from_txt,
         "csv": extract_text_from_csv,
+        "jpg": extract_text_from_image,
+        "jpeg": extract_text_from_image,
+        "png": extract_text_from_image,
     }
     extractor = extractors.get(file_type)
     if not extractor:
