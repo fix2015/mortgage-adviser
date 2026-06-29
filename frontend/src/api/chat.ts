@@ -1,5 +1,5 @@
 import client from "./client";
-import type { ChatMessage, ChatSession, ReadinessScoreResponse, NewsResponse, StrategyResponse } from "@/types";
+import type { ChatMessage, ChatSession, ReadinessScoreResponse, NewsResponse, StrategyResponse, FinancialSummary, BankSuggestion } from "@/types";
 
 export async function getChatSession(): Promise<ChatSession> {
   const response = await client.get<ChatSession>("/chat/session");
@@ -54,6 +54,23 @@ export async function downloadStrategy(strategyId: number): Promise<Blob> {
   const response = await client.get(`/chat/strategies/${strategyId}/download`, {
     responseType: "blob",
   });
+  return response.data;
+}
+
+export async function getFinancialSummary(): Promise<FinancialSummary> {
+  const response = await client.get("/chat/financial-summary");
+  return response.data;
+}
+
+export async function compareBanks(params: {
+  property_value: number;
+  deposit: number;
+  annual_income: number;
+  employment_type: string;
+  term_years: number;
+  first_time_buyer: boolean;
+}): Promise<{ recommendations: BankSuggestion[] }> {
+  const response = await client.post("/chat/compare-banks", params);
   return response.data;
 }
 

@@ -30,6 +30,7 @@ from app.modules.chat.schemas import (
     StrategyListResponse,
     NewsResponse,
     NewsArticle,
+    FinancialSummaryResponse,
 )
 from app.modules.chat import services
 from app.modules.documents.services import upload_to_s3, get_s3_client
@@ -258,6 +259,17 @@ def get_readiness(
     """Check document readiness for mortgage application. No OpenAI needed -- pure logic."""
     result = services.calculate_readiness(db, current_user.id, consultation.id)
     return ReadinessResponse(**result)
+
+
+@router.get("/financial-summary", response_model=FinancialSummaryResponse)
+def get_financial_summary(
+    current_user: User = Depends(get_current_user),
+    consultation: Consultation = Depends(get_active_consultation),
+    db: Session = Depends(get_db),
+):
+    """Extract key financial figures from uploaded documents using AI."""
+    result = services.get_financial_summary(db, consultation.id, current_user.id)
+    return result
 
 
 @router.post("/compare-banks", response_model=CompareBanksResponse)

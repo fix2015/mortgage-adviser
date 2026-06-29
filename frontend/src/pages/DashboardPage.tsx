@@ -8,6 +8,8 @@ import { KnowledgeGraph } from "@/components/knowledge/KnowledgeGraph";
 import { KnowledgePanel } from "@/components/knowledge/KnowledgePanel";
 import { ProgressTracker } from "@/components/dashboard/ProgressTracker";
 import { ReadinessScore } from "@/components/dashboard/ReadinessScore";
+import { FinancialSummary } from "@/components/dashboard/FinancialSummary";
+import { BankSuggestions } from "@/components/dashboard/BankSuggestions";
 import { createCheckout } from "@/api/payments";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -320,6 +322,7 @@ export function DashboardPage() {
   const [consultationLoading, setConsultationLoading] = useState(true);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [strategyCount, setStrategyCount] = useState(0);
+  const [readinessPercentage, setReadinessPercentage] = useState(0);
 
   useEffect(() => {
     const sessionId = searchParams.get("session_id"); const payment = searchParams.get("payment");
@@ -327,6 +330,7 @@ export function DashboardPage() {
       if (payment === "success" && sessionId) { try { await verifyPayment(sessionId); setPaymentVerified(true); } catch { /* ignored */ } }
       try { const c = await getActiveConsultation(); setConsultation(c); } catch { /* ignored */ setConsultation(null); }
       try { const s = await getStrategies(); setStrategyCount(s.total); } catch { /* ignored */ setStrategyCount(0); }
+      try { const r = await getReadinessScore(); setReadinessPercentage(r.overall_percentage); } catch { /* ignored */ }
       setConsultationLoading(false);
     };
     load();
@@ -360,7 +364,9 @@ export function DashboardPage() {
       {consultation.is_trial && !paymentVerified && <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-ds-accent-secondary/30 bg-ds-accent-secondary/5 p-4 flex items-center justify-between gap-4"><div className="flex items-center gap-3"><Sparkles className="h-5 w-5 text-ds-accent-secondary shrink-0" /><div><p className="text-sm font-medium text-ds-text-primary">You're on a free trial ({questionsLimit} questions, 1 document)</p><p className="text-xs text-ds-text-secondary mt-0.5">Upgrade for full access for £15.</p></div></div><Link to="/dashboard"><Button variant="glow" size="sm">Upgrade for £15</Button></Link></motion.div>}
 
       <ProgressTracker documentsCount={documents.length} hasProcessedDocument={documents.some((d) => d.status === "processed")} questionsUsed={questionsUsed} questionsLimit={questionsLimit} hasDownloadedReport={localStorage.getItem("report_downloaded") === "true"} />
+      <FinancialSummary />
       <ReadinessScore />
+      {readinessPercentage >= 80 && <BankSuggestions />}
 
       <div><h1 className="text-2xl font-bold text-ds-text-primary">Welcome back, {user?.full_name?.split(" ")[0] || "there"}</h1><p className="text-sm text-ds-text-secondary mt-1">Your AI mortgage consultation dashboard</p></div>
 

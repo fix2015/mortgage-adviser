@@ -302,6 +302,87 @@ def chat_completion_stream(
     save_message(db, consultation_id, user_id, MessageRole.ASSISTANT, full_response)
 
 
+# ---------- Financial Summary (uses AI) ----------
+
+
+def get_financial_summary(db: Session, consultation_id: int, user_id: int) -> dict:
+    """Extract key financial figures from the knowledge base using OpenAI."""
+    import json as _json
+
+    cache_key = f"financial_summary:{consultation_id}"
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
+
+    knowledge_base = get_knowledge_base_text(db, consultation_id)
+
+    if "No documents have been uploaded yet" in knowledge_base:
+        return {
+            "applicants": [],
+            "combined_income": None,
+            "estimated_deposit": None,
+            "credit_scores": None,
+            "borrowing_estimate_4x": None,
+            "borrowing_estimate_45x": None,
+        }
+
+    prompt = (
+        "Extract key financial details from the following knowledge base text. "
+        "Return ONLY valid JSON with no markdown fences.\n\n"
+        f"Knowledge base:\n{knowledge_base[:8000]}\n\n"
+        "Return this exact JSON structure:\n"
+        '{"applicants": [{"name": "Full Name or Applicant 1", "annual_income": "£X,XXX", '
+        '"employment_type": "employed/self_employed/company_director/cis_contractor", '
+        '"company": "Company Name or null"}], '
+        '"combined_income": "£X,XXX", "estimated_deposit": "£X,XXX or null", '
+        '"credit_scores": "Score info or null", '
+        '"borrowing_estimate_4x": "£X,XXX", "borrowing_estimate_45x": "£X,XXX"}\n\n'
+        "Rules:\n"
+        "- Extract real numbers from documents, do not invent data\n"
+        "- If only one applicant, combined_income equals their income\n"
+        "- borrowing_estimate_4x = combined_income * 4, borrowing_estimate_45x = combined_income * 4.5\n"
+        "- Use null for any field you cannot find evidence for\n"
+        "- Format all money as £X,XXX with commas"
+    )
+
+    try:
+        client = get_openai_client()
+        response = client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=800,
+            temperature=0.2,
+        )
+        raw = response.choices[0].message.content.strip()
+        if raw.startswith("```"):
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw)
+
+        data = _json.loads(raw)
+    except Exception:
+        data = {
+            "applicants": [],
+            "combined_income": None,
+            "estimated_deposit": None,
+            "credit_scores": None,
+            "borrowing_estimate_4x": None,
+            "borrowing_estimate_45x": None,
+        }
+
+    # Ensure correct structure
+    result = {
+        "applicants": data.get("applicants", []),
+        "combined_income": data.get("combined_income"),
+        "estimated_deposit": data.get("estimated_deposit"),
+        "credit_scores": data.get("credit_scores"),
+        "borrowing_estimate_4x": data.get("borrowing_estimate_4x"),
+        "borrowing_estimate_45x": data.get("borrowing_estimate_45x"),
+    }
+
+    set_cached(cache_key, result)
+    return result
+
+
 # ---------- Mortgage Calculator (no AI needed) ----------
 
 

@@ -125,6 +125,22 @@ class MortgageComparisonResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ApplicantSummary(BaseModel):
+    name: str = "Applicant"
+    annual_income: Optional[str] = None
+    employment_type: Optional[str] = None
+    company: Optional[str] = None
+
+
+class FinancialSummaryResponse(BaseModel):
+    applicants: list[ApplicantSummary] = []
+    combined_income: Optional[str] = None
+    estimated_deposit: Optional[str] = None
+    credit_scores: Optional[str] = None
+    borrowing_estimate_4x: Optional[str] = None
+    borrowing_estimate_45x: Optional[str] = None
+
+
 class NewsArticle(BaseModel):
     title: str
     date: str

@@ -21,6 +21,16 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled, placeholder }
     }
   }, [value]);
 
+  // Pick up prefilled message from localStorage (e.g. from bank suggestions)
+  useEffect(() => {
+    const prefill = localStorage.getItem("chat_prefill_message");
+    if (prefill) {
+      setValue(prefill);
+      localStorage.removeItem("chat_prefill_message");
+      setTimeout(() => textareaRef.current?.focus(), 100);
+    }
+  }, []);
+
   const handleSubmit = () => {
     const trimmed = value.trim();
     if (!trimmed || disabled) return;

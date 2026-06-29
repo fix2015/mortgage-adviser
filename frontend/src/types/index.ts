@@ -201,3 +201,31 @@ export interface ZipUploadResult {
   errors: number;
   files: { filename: string; status: string }[];
 }
+
+export interface ApplicantSummary {
+  name: string;
+  annual_income: string | null;
+  employment_type: string | null;
+  company: string | null;
+}
+
+export interface FinancialSummary {
+  applicants: ApplicantSummary[];
+  combined_income: string | null;
+  estimated_deposit: string | null;
+  credit_scores: string | null;
+  borrowing_estimate_4x: string | null;
+  borrowing_estimate_45x: string | null;
+}
+
+export interface BankSuggestion {
+  lender_name: string;
+  product_type: string;
+  interest_rate: number;
+  monthly_payment: number;
+  term_years: number;
+  ltv: number;
+  total_cost: number;
+  fees: number;
+  reason: string;
+}
