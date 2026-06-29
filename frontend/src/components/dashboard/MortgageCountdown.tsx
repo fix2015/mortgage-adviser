@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Clock, Calendar, PoundSterling, CheckCircle2, AlertTriangle, Info } from "lucide-react";
+import { Clock, Calendar, CheckCircle2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/utils/cn";

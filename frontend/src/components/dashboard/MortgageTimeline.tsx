@@ -14,7 +14,6 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  PoundSterling,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/utils/cn";

@@ -38,7 +38,7 @@ function extractSuggestions(content: string): { mainContent: string; suggestions
   const lines = suggestionsText.split("\n");
   for (const line of lines) {
     const trimmed = line.trim();
-    const match = trimmed.match(/^(?:\d+[\.\)]\s*|-\s*|\*\s*)(.*\?.*)/);
+    const match = trimmed.match(/^(?:\d+[.)]\s*|-\s*|\*\s*)(.*\?.*)/);
     if (match) {
       suggestions.push(match[1].trim());
     }

@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, AlertTriangle, XCircle, ChevronDown, ChevronUp, MessageSquare, Building2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Spinner } from "@/components/ui/Spinner";
 import { getLenderPredictions } from "@/api/chat";
 import type { LenderPrediction } from "@/types";
 

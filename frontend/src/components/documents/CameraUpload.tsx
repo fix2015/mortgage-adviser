@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Camera, RotateCcw, Upload, X, AlertCircle } from "lucide-react";
+import { Camera, RotateCcw, Upload, AlertCircle } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 
@@ -78,6 +78,14 @@ export function CameraUpload({ isOpen, onClose, onUpload, isUploading }: CameraU
     startCamera();
   }, [startCamera]);
 
+  const handleClose = useCallback(() => {
+    stopCamera();
+    setCapturedImage(null);
+    setMode("camera");
+    setErrorMessage("");
+    onClose();
+  }, [stopCamera, onClose]);
+
   const handleUpload = useCallback(async () => {
     if (!capturedImage) return;
 
@@ -86,15 +94,7 @@ export function CameraUpload({ isOpen, onClose, onUpload, isUploading }: CameraU
     const file = new File([blob], `scan_${Date.now()}.jpg`, { type: "image/jpeg" });
     await onUpload(file);
     handleClose();
-  }, [capturedImage, onUpload]);
-
-  const handleClose = useCallback(() => {
-    stopCamera();
-    setCapturedImage(null);
-    setMode("camera");
-    setErrorMessage("");
-    onClose();
-  }, [stopCamera, onClose]);
+  }, [capturedImage, onUpload, handleClose]);
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Scan Document" size="lg">
