@@ -126,7 +126,7 @@ function GraphDemo() {
     gradient.addColorStop(0, color + "40"); gradient.addColorStop(1, color + "00");
     ctx.beginPath(); ctx.arc(node.x, node.y, size * 3, 0, 2 * Math.PI); ctx.fillStyle = gradient; ctx.fill();
     ctx.beginPath(); ctx.arc(node.x, node.y, size, 0, 2 * Math.PI); ctx.fillStyle = color; ctx.fill();
-    if (node.label) { ctx.font = "4px Inter, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillStyle = "#94A3B8"; ctx.fillText(node.label, node.x, node.y + size + 4); }
+    if (node.label) { ctx.font = "4px Inter, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillStyle = "#475569"; ctx.fillText(node.label, node.x, node.y + size + 4); }
   }, []);
 
   return (

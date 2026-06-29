@@ -81,7 +81,7 @@ export function KnowledgeGraph({ onNodeClick, width, height }: KnowledgeGraphPro
         ctx.font = "3px Inter, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillStyle = "#94A3B8";
+        ctx.fillStyle = "#475569";
         ctx.fillText(node.label, node.x, node.y + size + 3);
       }
     },

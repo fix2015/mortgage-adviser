@@ -4,28 +4,28 @@
 
 @layer base {
   :root {
-    --ds-bg-primary: #0F172A;
-    --ds-bg-secondary: #1E293B;
-    --ds-bg-tertiary: #1A2332;
-    --ds-bg-surface: #243040;
-    --ds-bg-inverse: #FFFFFF;
+    --ds-bg-primary: #FFFFFF;
+    --ds-bg-secondary: #F8FAFC;
+    --ds-bg-tertiary: #F1F5F9;
+    --ds-bg-surface: #E2E8F0;
+    --ds-bg-inverse: #0F172A;
 
-    --ds-text-primary: #F1F5F9;
-    --ds-text-secondary: #94A3B8;
-    --ds-text-muted: #64748B;
+    --ds-text-primary: #0F172A;
+    --ds-text-secondary: #475569;
+    --ds-text-muted: #94A3B8;
     --ds-text-accent: #059669;
-    --ds-text-inverse: #0F172A;
+    --ds-text-inverse: #FFFFFF;
 
     --ds-accent-primary: #059669;
     --ds-accent-secondary: #D97706;
 
-    --ds-border-default: #1E293B;
-    --ds-border-strong: #334155;
+    --ds-border-default: #E2E8F0;
+    --ds-border-strong: #CBD5E1;
     --ds-border-accent: #059669;
 
-    --ds-feedback-success: #10B981;
-    --ds-feedback-error: #EF4444;
-    --ds-feedback-warning: #F59E0B;
+    --ds-feedback-success: #059669;
+    --ds-feedback-error: #DC2626;
+    --ds-feedback-warning: #D97706;
 
     --radius: 0.5rem;
   }
@@ -53,16 +53,16 @@
 /* Glass card utility */
 @layer utilities {
   .glass {
-    background: rgba(26, 35, 50, 0.6);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(226, 232, 240, 0.8);
   }
   .glass-strong {
-    background: rgba(36, 48, 64, 0.8);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(226, 232, 240, 0.9);
   }
   .text-gradient {
     background: linear-gradient(135deg, var(--ds-accent-primary), var(--ds-accent-secondary));

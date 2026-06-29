@@ -22,8 +22,12 @@ export async function sendMessage(content: string, agent?: string): Promise<Chat
 }
 
 export async function getReadinessScore(): Promise<ReadinessScoreResponse> {
-  const response = await client.get("/chat/health-score");
+  const response = await client.get<ReadinessScoreResponse>("/chat/readiness");
   return response.data;
+}
+
+export async function updateEmploymentType(employmentType: string): Promise<void> {
+  await client.patch("/users/me/mortgage-info", { employment_type: employmentType });
 }
 
 export async function finishConsultation(): Promise<{ message: string }> {

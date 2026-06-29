@@ -9,6 +9,7 @@ export interface User {
   income_range: string | null;
   property_value: number | null;
   onboarding_completed: boolean;
+  employment_type: string | null;
 }
 
 export interface AuthTokens {
@@ -146,12 +147,20 @@ export interface AdminPayment {
   type: "consultation" | "extra_questions";
 }
 
+export interface ChecklistItem {
+  category: string;
+  label: string;
+  status: "uploaded" | "missing";
+  documents: string[];
+}
+
 export interface ReadinessScoreResponse {
-  overall: number;
-  deposit_strength: number;
-  income_stability: number;
-  credit_readiness: number;
-  recommendations: string[];
+  overall_percentage: number;
+  checklist: ChecklistItem[];
+  missing_documents: string[];
+  employment_type: string;
+  total_required: number;
+  total_uploaded: number;
 }
 
 export interface MortgageCalculation {
