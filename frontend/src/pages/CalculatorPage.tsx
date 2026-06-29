@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { Calculator, Home, Users, UserCheck, Building2, Info } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { formatPounds } from "@/utils/format";
 import { cn } from "@/utils/cn";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Truck, PoundSterling, Info, Minus, Plus, Calendar, ArrowRight } from "lucide-react";
+import { Truck, PoundSterling, Info, Minus, Plus, Calendar } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/utils/cn";
