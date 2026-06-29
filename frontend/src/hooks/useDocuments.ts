@@ -9,10 +9,15 @@ export function useDocuments() {
     queryFn: getDocuments,
   });
 
+  const clearReadinessCache = () => {
+    localStorage.removeItem("readiness_cache");
+  };
+
   const uploadMutation = useMutation({
     mutationFn: uploadDocument,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
+      clearReadinessCache();
     },
   });
 
@@ -20,6 +25,7 @@ export function useDocuments() {
     mutationFn: uploadZip,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
+      clearReadinessCache();
     },
   });
 
@@ -27,6 +33,7 @@ export function useDocuments() {
     mutationFn: deleteDocument,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
+      clearReadinessCache();
     },
   });
 
