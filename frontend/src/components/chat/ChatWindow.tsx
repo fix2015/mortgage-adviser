@@ -77,7 +77,7 @@ export function ChatWindow() {
             </div>
           </div>
         )}
-        {messages.map((msg) => <ChatMessage key={msg.id} message={msg} />)}
+        {messages.map((msg) => <ChatMessage key={msg.id} message={msg} onQuestionClick={handleSend} />)}
         {isStreaming && streamingContent && <StreamingMessage content={streamingContent} />}
         {error && <div className="mx-auto max-w-md rounded-xl border border-ds-feedback-error/30 bg-ds-feedback-error/10 p-4 text-center"><p className="text-sm text-ds-feedback-error">{error}</p></div>}
       </div>

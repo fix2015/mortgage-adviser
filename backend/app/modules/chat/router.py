@@ -141,12 +141,12 @@ def get_suggestions(
     if total == 0:
         return {
             "suggestions": [
-                "How much can I borrow based on my income?",
-                "What's the best mortgage rate I can get right now?",
-                "What documents do I need for a mortgage application?",
-                "Should I get a fixed or tracker mortgage?",
-                "How much stamp duty will I pay on my property?",
-                "Am I eligible for any first-time buyer schemes?",
+                "Based on my documents, how much can I borrow and what's my maximum offer?",
+                "Compare 2-year fixed vs 5-year fixed for my specific situation",
+                "What happens when my fixed rate ends and what should I plan for?",
+                "Is it worth paying a higher product fee for a lower rate? Show me the numbers",
+                "Summarise my best mortgage options in a comparison table",
+                "What could go wrong with my mortgage application based on my profile?",
             ]
         }
 
