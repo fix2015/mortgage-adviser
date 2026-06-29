@@ -1,0 +1,94 @@
+name: ai-mortgage-adviser
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mortgage_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mortgage_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mortgage_password}
+      POSTGRES_DB: ${POSTGRES_DB:-mortgage_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mortgage_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: mortgage_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-mortgage_redis_pass}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6381:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-mortgage_redis_pass}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: mortgage_backend
+    restart: unless-stopped
+    env_file:
+      - ../backend/.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mortgage_user}:${POSTGRES_PASSWORD:-mortgage_password}@postgres:5432/${POSTGRES_DB:-mortgage_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-mortgage_redis_pass}@redis:6379/0
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  celery_worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: mortgage_celery_worker
+    restart: unless-stopped
+    env_file:
+      - ../backend/.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mortgage_user}:${POSTGRES_PASSWORD:-mortgage_password}@postgres:5432/${POSTGRES_DB:-mortgage_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-mortgage_redis_pass}@redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: mortgage_frontend
+    restart: unless-stopped
+    ports:
+      - "3003:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: mortgage_network
