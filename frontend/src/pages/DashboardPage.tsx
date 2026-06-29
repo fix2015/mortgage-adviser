@@ -27,9 +27,8 @@ const EMPLOYMENT_TABS = [
 
 const COMMON_CATEGORIES = new Set(["id", "address", "credit_report", "deposit", "immigration"]);
 
-// Critical = must get before applying. Important = strongly recommended.
+// Critical = must get before applying. Everything else = strongly recommended.
 const CRITICAL_CATEGORIES = new Set(["id", "address", "bank_statements", "tax_returns", "employment", "deposit", "company_accounts"]);
-const IMPORTANT_CATEGORIES = new Set(["payslips", "credit_report", "immigration", "income"]);
 
 const WHY_NEEDED: Record<string, Record<string, string>> = {
   common: {
