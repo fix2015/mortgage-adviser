@@ -325,15 +325,23 @@ def get_financial_summary(db: Session, consultation_id: int, user_id: int) -> di
         "Return ONLY valid JSON with no markdown fences.\n\n"
         f"Knowledge base:\n{knowledge_base[:8000]}\n\n"
         "Return this exact JSON structure:\n"
-        '{"applicants": [{"name": "Full Name or Applicant 1", "annual_income": "£X,XXX", '
+        '{"applicants": [{"name": "Full Name", "annual_income": "£X,XXX", '
+        '"employment_type": "employed/self_employed/company_director/cis_contractor", '
+        '"company": "Company Name or null"}, '
+        '{"name": "Second Applicant Name", "annual_income": "£X,XXX", '
         '"employment_type": "employed/self_employed/company_director/cis_contractor", '
         '"company": "Company Name or null"}], '
         '"combined_income": "£X,XXX", "estimated_deposit": "£X,XXX or null", '
         '"credit_scores": "Score info or null", '
         '"borrowing_estimate_4x": "£X,XXX", "borrowing_estimate_45x": "£X,XXX"}\n\n'
         "Rules:\n"
+        "- IMPORTANT: Look for ALL applicants in the documents. Joint applications, partners, "
+        "and co-applicants must each appear as separate entries in the applicants array.\n"
+        "- If documents mention different people (different names on payslips, bank statements, "
+        "tax returns), each person is a separate applicant.\n"
         "- Extract real numbers from documents, do not invent data\n"
-        "- If only one applicant, combined_income equals their income\n"
+        "- combined_income = sum of all applicants' annual incomes\n"
+        "- If only one applicant found, combined_income equals their income\n"
         "- borrowing_estimate_4x = combined_income * 4, borrowing_estimate_45x = combined_income * 4.5\n"
         "- Use null for any field you cannot find evidence for\n"
         "- Format all money as £X,XXX with commas"

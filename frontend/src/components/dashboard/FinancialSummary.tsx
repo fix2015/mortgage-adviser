@@ -8,7 +8,6 @@ import type { FinancialSummary as FinancialSummaryType } from "@/types";
 import { cn } from "@/utils/cn";
 
 const CACHE_KEY = "financial_summary_cache";
-const CACHE_TTL = 3600000; // 1 hour
 
 function formatEmploymentType(type: string | null): string {
   if (!type) return "Unknown";
@@ -40,8 +39,8 @@ export function FinancialSummary() {
       try {
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
-          const { data: d, timestamp } = JSON.parse(cached);
-          if (Date.now() - timestamp < CACHE_TTL) {
+          const { data: d } = JSON.parse(cached);
+          if (d) {
             setData(d);
             setLoading(false);
             return;
