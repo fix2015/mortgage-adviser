@@ -1119,7 +1119,10 @@ def _styled_table(rows: list[list[str]], col_widths: list, navy, light_bg):
 
 
 def _ai_generate_report_analysis(
-    knowledge_text: str, conversation_summary: str, user_profile: dict, consultation_id: int | None = None
+    knowledge_text: str,
+    conversation_summary: str,
+    user_profile: dict,
+    consultation_id: int | None = None,
 ) -> dict:
     """Call OpenAI once to generate the executive summary, challenges, and recommendations.
 
