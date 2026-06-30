@@ -606,6 +606,11 @@ def compare_banks(
     """Use OpenAI to suggest top 5 lender recommendations."""
     import json as _json
 
+    cache_key = f"compare_banks:{consultation_id}"
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
+
     loan_amount = property_value - deposit
     ltv = round((loan_amount / property_value) * 100, 1) if property_value > 0 else 0
 
@@ -675,6 +680,7 @@ def compare_banks(
             }
         )
 
+    set_cached(cache_key, recommendations)
     return recommendations
 
 
@@ -895,6 +901,11 @@ def mortgage_health_check(
 
 def generate_employer_reference(db: Session, consultation_id: int, user_id: int) -> str:
     """Use OpenAI to generate a draft employer reference letter for mortgage application."""
+    cache_key = f"employer_reference:{consultation_id}"
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
+
     from app.modules.users.models import User
 
     knowledge_base = get_knowledge_base_text(db, consultation_id)
@@ -934,6 +945,7 @@ def generate_employer_reference(db: Session, consultation_id: int, user_id: int)
             "(payslips, contract) and try again."
         )
 
+    set_cached(cache_key, letter_text)
     return letter_text
 
 
@@ -1113,7 +1125,7 @@ def _styled_table(rows: list[list[str]], col_widths: list, navy, light_bg):
 
 
 def _ai_generate_report_analysis(
-    knowledge_text: str, conversation_summary: str, user_profile: dict
+    knowledge_text: str, conversation_summary: str, user_profile: dict, consultation_id: int | None = None
 ) -> dict:
     """Call OpenAI once to generate the executive summary, challenges, and recommendations.
 
@@ -1121,6 +1133,12 @@ def _ai_generate_report_analysis(
     property_details, income_data, credit_summary, savings_data.
     """
     import json as _json
+
+    if consultation_id is not None:
+        cache_key = f"report_analysis:{consultation_id}"
+        cached = get_cached(cache_key)
+        if cached:
+            return cached
 
     prompt = f"""You are a senior UK mortgage adviser writing a professional Mortgage Readiness Assessment report.
 
@@ -1192,7 +1210,10 @@ If data is not available, use null rather than making up numbers.
         if raw.startswith("```"):
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
-        return _json.loads(raw)
+        result = _json.loads(raw)
+        if consultation_id is not None:
+            set_cached(f"report_analysis:{consultation_id}", result)
+        return result
     except Exception:
         return {}
 
@@ -1247,7 +1268,7 @@ def generate_strategy_report_pdf(
 
     # AI analysis (single call for summary, challenges, recommendations)
     analysis = _ai_generate_report_analysis(
-        knowledge_text, conversation_summary, user_profile
+        knowledge_text, conversation_summary, user_profile, consultation_id
     )
 
     # Borrowing capacity from profile

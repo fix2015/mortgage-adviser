@@ -563,6 +563,11 @@ def generate_report(
 
 def _generate_strategy_summary(db: Session, consultation_id: int) -> str | None:
     """Generate a short AI summary of the consultation for the strategy record."""
+    cache_key = f"strategy_summary:{consultation_id}"
+    cached = services.get_cached(cache_key)
+    if cached:
+        return cached
+
     try:
         messages = (
             db.query(Message)
@@ -602,6 +607,7 @@ def _generate_strategy_summary(db: Session, consultation_id: int) -> str | None:
         if raw.startswith("```"):
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
+        services.set_cached(cache_key, raw)
         return raw
     except Exception:
         return None

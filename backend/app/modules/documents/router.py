@@ -95,6 +95,10 @@ async def upload_document(
     # Clear cached AI results since knowledge base changed
     clear_cache(f"readiness:{consultation.id}")
     clear_cache(f"financial_summary:{consultation.id}")
+    clear_cache(f"lender_predictions:{consultation.id}")
+    clear_cache(f"compare_banks:{consultation.id}")
+    clear_cache(f"employer_reference:{consultation.id}")
+    clear_cache(f"report_analysis:{consultation.id}")
 
     return DocumentUploadResponse(
         id=document.id,
@@ -235,6 +239,10 @@ async def upload_zip(
     if processed > 0:
         clear_cache(f"readiness:{consultation.id}")
         clear_cache(f"financial_summary:{consultation.id}")
+        clear_cache(f"lender_predictions:{consultation.id}")
+        clear_cache(f"compare_banks:{consultation.id}")
+        clear_cache(f"employer_reference:{consultation.id}")
+        clear_cache(f"report_analysis:{consultation.id}")
 
     return {
         "processed": processed,
