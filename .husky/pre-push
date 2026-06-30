@@ -1,0 +1,13 @@
+echo "🚀 Running pre-push checks..."
+
+# Frontend: full build
+echo "→ Frontend: build"
+cd frontend && npm run build || exit 1
+cd ..
+
+# Backend: ruff format check
+echo "→ Backend: format check"
+cd backend && python3 -m ruff format --check . || exit 1
+cd ..
+
+echo "✅ All pre-push checks passed!"
