@@ -1,7 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
-import { Upload, FileText, AlertCircle, Camera } from "lucide-react";
+import { Upload, FileText, AlertCircle, Camera, Image } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { CameraUpload } from "@/components/documents/CameraUpload";
 
@@ -27,6 +27,17 @@ const defaultAccept = {
 
 export function FileUpload({ onUpload, isUploading, accept = defaultAccept }: FileUploadProps) {
   const [cameraOpen, setCameraOpen] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  const handleNativeCapture = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) await onUpload(file);
+      e.target.value = "";
+    },
+    [onUpload]
+  );
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -102,24 +113,68 @@ export function FileUpload({ onUpload, isUploading, accept = defaultAccept }: Fi
         </div>
       )}
 
-      <div className="mt-4 flex items-center justify-between">
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleNativeCapture}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleNativeCapture}
+      />
+
+      <div className="mt-4 flex flex-col gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={isUploading}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg border border-ds-border-default bg-ds-bg-surface px-3 py-2 text-xs font-medium text-ds-text-secondary transition-all duration-200",
+              "hover:border-ds-border-accent hover:text-ds-text-accent hover:bg-ds-accent-primary/5",
+              isUploading && "pointer-events-none opacity-50"
+            )}
+          >
+            <Camera className="h-3.5 w-3.5" />
+            Take Photo
+          </button>
+          <button
+            type="button"
+            onClick={() => galleryInputRef.current?.click()}
+            disabled={isUploading}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg border border-ds-border-default bg-ds-bg-surface px-3 py-2 text-xs font-medium text-ds-text-secondary transition-all duration-200",
+              "hover:border-ds-border-accent hover:text-ds-text-accent hover:bg-ds-accent-primary/5",
+              isUploading && "pointer-events-none opacity-50"
+            )}
+          >
+            <Image className="h-3.5 w-3.5" />
+            Photo Library
+          </button>
+          <button
+            type="button"
+            onClick={() => setCameraOpen(true)}
+            disabled={isUploading}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg border border-ds-border-default bg-ds-bg-surface px-3 py-2 text-xs font-medium text-ds-text-secondary transition-all duration-200",
+              "hover:border-ds-border-accent hover:text-ds-text-accent hover:bg-ds-accent-primary/5",
+              isUploading && "pointer-events-none opacity-50"
+            )}
+          >
+            <Camera className="h-3.5 w-3.5" />
+            Scan Document
+          </button>
+        </div>
         <div className="flex items-center gap-2 text-xs text-ds-text-muted">
           <FileText className="h-3.5 w-3.5" />
           Your documents are encrypted and stored securely.
         </div>
-        <button
-          type="button"
-          onClick={() => setCameraOpen(true)}
-          disabled={isUploading}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-lg border border-ds-border-default bg-ds-bg-surface px-3 py-2 text-xs font-medium text-ds-text-secondary transition-all duration-200",
-            "hover:border-ds-border-accent hover:text-ds-text-accent hover:bg-ds-accent-primary/5",
-            isUploading && "pointer-events-none opacity-50"
-          )}
-        >
-          <Camera className="h-3.5 w-3.5" />
-          Scan with Camera
-        </button>
       </div>
 
       <CameraUpload
