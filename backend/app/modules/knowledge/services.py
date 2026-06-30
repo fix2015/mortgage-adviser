@@ -262,7 +262,7 @@ def get_knowledge_base_text(db: Session, consultation_id: int) -> str:
         cat = entry.category.value.upper()
         if cat not in sections:
             sections[cat] = []
-        sections[cat].append(f"- {entry.title}: {entry.content[:500]}")
+        sections[cat].append(f"- {entry.title}: {entry.content[:1000]}")
 
     parts = []
     for cat, items in sections.items():

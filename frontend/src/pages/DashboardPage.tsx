@@ -334,17 +334,24 @@ export function DashboardPage() {
   const [strategyCount, setStrategyCount] = useState(0);
   const [readinessPercentage, setReadinessPercentage] = useState(0);
 
-  useEffect(() => {
+  const loadDashboard = useCallback(async () => {
     const sessionId = searchParams.get("session_id"); const payment = searchParams.get("payment");
-    const load = async () => {
-      if (payment === "success" && sessionId) { try { await verifyPayment(sessionId); setPaymentVerified(true); } catch { /* ignored */ } }
-      try { const c = await getActiveConsultation(); setConsultation(c); } catch { /* ignored */ setConsultation(null); }
-      try { const s = await getStrategies(); setStrategyCount(s.total); } catch { /* ignored */ setStrategyCount(0); }
-      try { const r = await getReadinessScore(); setReadinessPercentage(r.overall_percentage); } catch { /* ignored */ }
-      setConsultationLoading(false);
-    };
-    load();
+    if (payment === "success" && sessionId) { try { await verifyPayment(sessionId); setPaymentVerified(true); } catch { /* ignored */ } }
+    try { const c = await getActiveConsultation(); setConsultation(c); } catch { /* ignored */ setConsultation(null); }
+    try { const s = await getStrategies(); setStrategyCount(s.total); } catch { /* ignored */ setStrategyCount(0); }
+    try { const r = await getReadinessScore(); setReadinessPercentage(r.overall_percentage); } catch { /* ignored */ }
+    setConsultationLoading(false);
   }, [searchParams]);
+
+  useEffect(() => { loadDashboard(); }, [loadDashboard]);
+
+  // Refetch when user returns to the dashboard tab
+  useEffect(() => {
+    const onFocus = () => { loadDashboard(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") loadDashboard(); });
+    return () => { window.removeEventListener("focus", onFocus); };
+  }, [loadDashboard]);
 
   if (consultationLoading) return <div className="flex items-center justify-center min-h-screen p-6"><Spinner size="lg" /></div>;
 

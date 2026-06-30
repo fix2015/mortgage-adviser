@@ -323,7 +323,7 @@ def get_financial_summary(db: Session, consultation_id: int, user_id: int) -> di
     prompt = (
         "Extract key financial details from the following knowledge base text. "
         "Return ONLY valid JSON with no markdown fences.\n\n"
-        f"Knowledge base:\n{knowledge_base[:8000]}\n\n"
+        f"Knowledge base:\n{knowledge_base[:12000]}\n\n"
         "Return this exact JSON structure:\n"
         '{"applicants": [{"name": "Full Name", "annual_income": "£X,XXX", '
         '"employment_type": "employed/self_employed/company_director/cis_contractor", '
@@ -339,6 +339,11 @@ def get_financial_summary(db: Session, consultation_id: int, user_id: int) -> di
         "and co-applicants must each appear as separate entries in the applicants array.\n"
         "- If documents mention different people (different names on payslips, bank statements, "
         "tax returns), each person is a separate applicant.\n"
+        "- INCOME CALCULATION: Do NOT simply multiply the latest payslip by 12. "
+        "If multiple payslips show different monthly amounts (e.g. salary changed mid-year), "
+        "sum the actual monthly amounts and project the remaining months at the most recent rate. "
+        "For example: if Jan-Mar payslips show £1,048/month and Apr-May show £2,485/month, "
+        "annual income = (3 × £1,048) + (2 × £2,485) + (7 × £2,485) for remaining months.\n"
         "- Extract real numbers from documents, do not invent data\n"
         "- combined_income = sum of all applicants' annual incomes\n"
         "- If only one applicant found, combined_income equals their income\n"
