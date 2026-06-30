@@ -115,6 +115,9 @@ jobs:
             # Start all services
             sudo docker compose -f docker-compose.prod.yml up -d
 
+            # Run database migrations
+            sudo docker compose -f docker-compose.prod.yml exec -T backend alembic upgrade head || true
+
             # Show running containers
             sudo docker compose -f docker-compose.prod.yml ps
           EOF
