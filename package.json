@@ -8,6 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "record-videos": "node scripts/video-recording/record-demo.js",
+    "make-videos": "./scripts/video-recording/full-pipeline.sh",
     "prepare": "husky"
   },
   "repository": {
@@ -23,6 +25,8 @@
   },
   "homepage": "https://github.com/fix2015/mortgage-adviser#readme",
   "devDependencies": {
-    "husky": "^9.1.7"
+    "@playwright/test": "^1.61.1",
+    "husky": "^9.1.7",
+    "playwright": "^1.61.1"
   }
 }
