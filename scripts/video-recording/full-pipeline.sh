@@ -34,7 +34,7 @@ echo "============================================="
 
 echo ""
 echo "📹 Step 1: Recording screen demos..."
-node scripts/video-recording/record-demo.js
+node scripts/video-recording/record-demo.js "$@"
 
 # ─── Step 2: Generate Voiceovers ───────────────────────────────────────
 
@@ -43,6 +43,12 @@ echo "🎙️  Step 2: Generating voiceovers..."
 
 # Voiceover scripts
 HERO_VO="Confused by mortgage jargon? Paying hundreds for basic advice? Meet AI Mortgage Adviser. Upload your documents, payslips, bank statements, and get personalised mortgage advice in seconds. Instant answers, twenty-four seven. Just fifteen pounds per consultation. No broker fees, no hidden costs. Join thousands of UK homebuyers getting smarter mortgage advice. Try AI Mortgage Adviser today."
+
+DASHBOARD_VO="Once you sign in, your personal dashboard shows everything at a glance. Your financial summary extracted from uploaded documents. Your mortgage readiness score. Borrowing estimates. Lender predictions. And a countdown to your dream home. All updated in real time as you add more documents."
+
+CHAT_VO="Ask any mortgage question and get an instant, personalised answer. How much can I borrow? What lenders suit me best? Should I fix or go variable? Our AI analyses your actual documents to give you specific, accurate advice. Not generic calculators. Real answers for your situation."
+
+CALCULATOR_VO="The mortgage calculator lets you explore different scenarios. Adjust the property value, deposit, and term to see monthly payments, total interest, stamp duty, and loan to value ratio. Compare fixed versus variable rates. See exactly what you can afford."
 
 TIKTOK_VO="Upload your payslip. Get instant mortgage advice. Fifteen pounds. No broker needed."
 
@@ -84,6 +90,9 @@ generate_voiceover() {
 }
 
 generate_voiceover "$HERO_VO" "hero-voiceover.mp3"
+generate_voiceover "$DASHBOARD_VO" "dashboard-voiceover.mp3"
+generate_voiceover "$CHAT_VO" "chat-voiceover.mp3"
+generate_voiceover "$CALCULATOR_VO" "calculator-voiceover.mp3"
 generate_voiceover "$TIKTOK_VO" "tiktok-voiceover.mp3"
 generate_voiceover "$COMPARISON_VO" "comparison-voiceover.mp3"
 
@@ -124,20 +133,29 @@ compose_video() {
   echo "   ✅ $output"
 }
 
-# Hero explainer — 16:9 (YouTube/website)
-compose_video "$RECORDINGS_DIR/landing-scroll.webm" "$VOICEOVER_DIR/hero-voiceover.mp3" "hero-explainer-16x9.mp4" 1280 720
+# Landing page — 16:9
+compose_video "$RECORDINGS_DIR/landing-scroll.webm" "$VOICEOVER_DIR/hero-voiceover.mp3" "landing-16x9.mp4" 1280 720
 
-# Hero explainer — 9:16 (TikTok/Reels)
-compose_video "$RECORDINGS_DIR/mobile-demo.webm" "$VOICEOVER_DIR/hero-voiceover.mp3" "hero-explainer-9x16.mp4" 720 1280
+# Dashboard overview — 16:9
+compose_video "$RECORDINGS_DIR/dashboard.webm" "$VOICEOVER_DIR/dashboard-voiceover.mp3" "dashboard-16x9.mp4" 1280 720
 
-# Hero explainer — 1:1 (Facebook/LinkedIn)
-compose_video "$RECORDINGS_DIR/landing-scroll.webm" "$VOICEOVER_DIR/hero-voiceover.mp3" "hero-explainer-1x1.mp4" 720 720
+# AI Chat — 16:9
+compose_video "$RECORDINGS_DIR/chat.webm" "$VOICEOVER_DIR/chat-voiceover.mp3" "chat-16x9.mp4" 1280 720
 
-# TikTok demo — 9:16
-compose_video "$RECORDINGS_DIR/mobile-demo.webm" "$VOICEOVER_DIR/tiktok-voiceover.mp3" "tiktok-demo-9x16.mp4" 720 1280
+# Calculator — 16:9
+compose_video "$RECORDINGS_DIR/calculator.webm" "$VOICEOVER_DIR/calculator-voiceover.mp3" "calculator-16x9.mp4" 1280 720
 
-# Calculator demo — 16:9
-compose_video "$RECORDINGS_DIR/calculator-demo.webm" "$VOICEOVER_DIR/comparison-voiceover.mp3" "calculator-demo-16x9.mp4" 1280 720
+# Lender Predictions — 16:9
+compose_video "$RECORDINGS_DIR/predictions.webm" "$VOICEOVER_DIR/comparison-voiceover.mp3" "predictions-16x9.mp4" 1280 720
+
+# Documents — 16:9
+compose_video "$RECORDINGS_DIR/documents.webm" "$VOICEOVER_DIR/dashboard-voiceover.mp3" "documents-16x9.mp4" 1280 720
+
+# Mobile dashboard — 9:16 (TikTok/Reels)
+compose_video "$RECORDINGS_DIR/mobile-dashboard.webm" "$VOICEOVER_DIR/tiktok-voiceover.mp3" "mobile-dashboard-9x16.mp4" 720 1280
+
+# Dashboard — 1:1 (Facebook/LinkedIn)
+compose_video "$RECORDINGS_DIR/dashboard.webm" "$VOICEOVER_DIR/dashboard-voiceover.mp3" "dashboard-1x1.mp4" 720 720
 
 # ─── Done ──────────────────────────────────────────────────────────────
 

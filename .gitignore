@@ -34,3 +34,7 @@ htmlcov/
 coverage.xml
 dist/
 dist/
+*.webm
+*.mp4
+*.mp3
+*.aiff
