@@ -1,5 +1,6 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { COMPANY } from "@/config/company";
 
 export function TermsPage() {
   return (
@@ -13,7 +14,7 @@ export function TermsPage() {
         <section><h2 className="text-lg font-semibold text-ds-text-primary mb-3">5. Data Handling</h2><p>Documents are stored encrypted on AWS. We handle data in accordance with our Privacy Policy and UK GDPR.</p></section>
         <section><h2 className="text-lg font-semibold text-ds-text-primary mb-3">6. Not a Mortgage Broker</h2><p>AI Mortgage Adviser is not authorised by the FCA as a mortgage broker. We provide information and AI-generated guidance only. Any mortgage application must be made through an FCA-authorised broker or lender.</p></section>
         <section><h2 className="text-lg font-semibold text-ds-text-primary mb-3">7. Governing Law</h2><p>These Terms are governed by the laws of England and Wales.</p></section>
-        <section><h2 className="text-lg font-semibold text-ds-text-primary mb-3">8. Contact</h2><p>For questions, contact <a href="mailto:support@aimortgage.co.uk" className="text-ds-text-accent hover:underline">support@aimortgage.co.uk</a></p></section>
+        <section><h2 className="text-lg font-semibold text-ds-text-primary mb-3">8. Contact</h2><p>For questions, contact <a href={`mailto:${COMPANY.email}`} className="text-ds-text-accent hover:underline">{COMPANY.email}</a>. The Service is provided by {COMPANY.name}, company number {COMPANY.number}, registered office {COMPANY.address}.</p></section>
       </div>
     </div></div><Footer /></div>
   );

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Home } from "lucide-react";
+import { COMPANY } from "@/config/company";
 
 export function Footer() {
   return (
@@ -38,13 +39,13 @@ export function Footer() {
             <ul className="space-y-2.5">
               <li><Link to="/terms" className="text-sm text-ds-text-muted hover:text-ds-text-primary transition-colors">Terms of Service</Link></li>
               <li><Link to="/privacy" className="text-sm text-ds-text-muted hover:text-ds-text-primary transition-colors">Privacy Policy</Link></li>
-              <li><a href="mailto:support@aimortgage.co.uk" className="text-sm text-ds-text-muted hover:text-ds-text-primary transition-colors">Contact</a></li>
+              <li><a href={`mailto:${COMPANY.email}`} className="text-sm text-ds-text-muted hover:text-ds-text-primary transition-colors">Contact</a></li>
             </ul>
           </div>
         </div>
 
         <div className="mt-10 border-t border-ds-border-default pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-ds-text-muted">&copy; {new Date().getFullYear()} AI Mortgage Adviser. All rights reserved.</p>
+          <p className="text-xs text-ds-text-muted">&copy; {new Date().getFullYear()} {COMPANY.name}, company number {COMPANY.number}. Registered office: {COMPANY.address}.</p>
           <p className="text-xs text-ds-text-muted">Made in the UK. Not a substitute for professional advice.</p>
         </div>
       </div>
